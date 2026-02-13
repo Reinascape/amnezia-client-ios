@@ -6,6 +6,7 @@
 #include <QRandomGenerator>
 #include <QStandardPaths>
 #include <QUrlQuery>
+#include <QUrl>
 
 #include "core/api/apiDefs.h"
 #include "core/api/apiUtils.h"
@@ -75,6 +76,127 @@ ImportController::ImportController(const QSharedPointer<ServersModel> &serversMo
 #ifdef Q_OS_ANDROID
     mInstance = this;
 #endif
+}
+
+bool ImportController::httpGet(const QUrl &url)
+{
+    QNetworkAccessManager manager;
+
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    QNetworkReply *reply = manager.get(request);
+
+    QEventLoop loop;
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        QString error = reply->errorString();
+        reply->deleteLater();
+        qWarning() << error.toStdString();
+        return false;
+    }
+
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+
+    QByteArray decoded;
+    QString text;
+    if (isValidBase64(data)) {
+        qDebug() << "Data is a base64 string\n";
+        // decoded = QByteArray::fromBase64(data, QByteArray::Base64UrlEncoding);
+        decoded = base64Decode(data);
+        text = QString::fromUtf8(decoded).trimmed();
+    } else {
+        qDebug() << "Data isn't a base64 string\n";
+        data.replace('\r', "");
+        text = QString::fromUtf8(data).trimmed();
+    }
+    QStringList configs = text.split('\n', Qt::SkipEmptyParts);
+
+    qDebug() << decoded << "\n";
+    qDebug() << text << "\n";
+
+    for (const QString &cfg : configs) {
+        if (cfg.startsWith("vmess://"))
+            qDebug() << cfg;
+        else if (cfg.startsWith("vless://"))
+            qDebug() << cfg;
+        else if (cfg.startsWith("ss://"))
+            qDebug() << cfg;
+        else if (cfg.startsWith("trojan://"))
+            qDebug() << cfg;
+        else
+            qDebug() << "Unknown protocol:\n" << cfg.left(10);
+    }
+
+    return true;
+}
+
+bool ImportController::isValidBase64(const QByteArray &input)
+{
+    QByteArray data = input;
+    data = data.trimmed();
+
+    if (data.isEmpty())
+        return false;
+
+    static QRegularExpression base64Regex("^[A-Za-z0-9+/=_\\r\\n-]+$");
+
+    if (!base64Regex.match(QString::fromLatin1(data)).hasMatch())
+        return false;
+
+    data.replace("\r", "");
+    data.replace("\n", "");
+
+    if (data.size() % 4 != 0)
+        return false;
+
+    QByteArray decoded = QByteArray::fromBase64(data, QByteArray::Base64UrlEncoding);
+
+    if (decoded.isEmpty())
+        decoded = QByteArray::fromBase64(data);
+
+    return !decoded.isEmpty();
+}
+
+static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        "0123456789+/";
+
+QByteArray ImportController::base64Decode(const QByteArray &input)
+{
+    std::string clean(input.constData(), input.length());
+
+    for (auto &c : clean) {
+        if (c == '-')
+            c = '+';
+        if (c == '_')
+            c = '/';
+    }
+
+    while (clean.size() % 4 != 0)
+        clean += '=';
+
+    std::string output;
+    std::vector<int> T(256, -1);
+    for (int i = 0; i < 64; i++)
+        T[base64_chars[i]] = i;
+
+    int val = 0, valb = -8;
+    for (unsigned char c : clean) {
+        if (T[c] == -1)
+            break;
+        val = (val << 6) + T[c];
+        valb += 6;
+        if (valb >= 0) {
+            output.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    QByteArray output_qa(output.c_str(), output.length());
+    return output_qa;
 }
 
 bool ImportController::extractConfigFromFile(const QString &fileName)
