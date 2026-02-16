@@ -187,44 +187,23 @@ PageType {
 
                 text: qsTr("Continue")
 
+                function isValidUrl(text) {
+                    try {
+                        var u = new URL(text)
+                        return u.protocol === "http:" || u.protocol === "https:"
+                    } catch(e) {
+                        return false
+                    }
+                }
+
                 clickedFunc: function() {
+                    if (isValidUrl(textKey.textField.text)) {
+                        ImportController.httpGet(textKey.textField.text)
+                        return
+                    }
                     if (ImportController.extractConfigFromData(textKey.textField.text)) {
                         PageController.goToPage(PageEnum.PageSetupWizardViewConfig)
                     }
-                }
-            }
-
-            TextFieldWithHeaderType {
-                id: texturl
-
-                Layout.fillWidth: true
-                Layout.topMargin: 32
-                Layout.rightMargin: 16
-                Layout.leftMargin: 16
-
-                headerText: qsTr("Insert url")
-                buttonText: qsTr("Insert")
-
-                clickedFunc: function() {
-                    textField.text = ""
-                    textField.paste()
-                }
-            }
-
-            BasicButtonType {
-                id: urlcontinueButton
-
-                Layout.fillWidth: true
-                Layout.topMargin: 16
-                Layout.rightMargin: 16
-                Layout.leftMargin: 16
-
-                visible: texturl.textField.text !== ""
-
-                text: qsTr("Continue")
-
-                clickedFunc: function() {
-                    ImportController.httpGet(texturl.textField.text)
                 }
             }
 

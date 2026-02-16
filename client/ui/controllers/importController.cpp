@@ -6,7 +6,6 @@
 #include <QRandomGenerator>
 #include <QStandardPaths>
 #include <QUrlQuery>
-#include <QUrl>
 
 #include "core/api/apiDefs.h"
 #include "core/api/apiUtils.h"
@@ -105,7 +104,6 @@ bool ImportController::httpGet(const QUrl &url)
     QString text;
     if (isValidBase64(data)) {
         qDebug() << "Data is a base64 string\n";
-        // decoded = QByteArray::fromBase64(data, QByteArray::Base64UrlEncoding);
         decoded = base64Decode(data);
         text = QString::fromUtf8(decoded).trimmed();
     } else {
@@ -119,13 +117,15 @@ bool ImportController::httpGet(const QUrl &url)
     qDebug() << text << "\n";
 
     for (const QString &cfg : configs) {
-        if (cfg.startsWith("vmess://"))
+        if (cfg.startsWith("vless://"))
             qDebug() << cfg;
-        else if (cfg.startsWith("vless://"))
+        else if (cfg.startsWith("vmess://"))
+            qDebug() << cfg;
+        else if (cfg.startsWith("trojan://"))
             qDebug() << cfg;
         else if (cfg.startsWith("ss://"))
             qDebug() << cfg;
-        else if (cfg.startsWith("trojan://"))
+        else if (cfg.startsWith("ssd://"))
             qDebug() << cfg;
         else
             qDebug() << "Unknown protocol:\n" << cfg.left(10);
