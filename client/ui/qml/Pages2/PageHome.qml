@@ -358,6 +358,8 @@ PageType {
 
                                     PageController.goToPage(PageEnum.PageSettingsApiServerInfo)
                                 }
+                            /*} else if (ServersModel.getProcessedServerData("isConfigSelectionAvailable")) {
+                                    PageController.goToPage(PageEnum.PageSettingsXRayAvailableConfigs)*/
                             } else {
                                 PageController.goToPage(PageEnum.PageSettingsServerInfo)
                             }

@@ -1,0 +1,165 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick.Dialogs
+
+import SortFilterProxyModel 0.2
+
+import PageEnum 1.0
+import Style 1.0
+
+import "./"
+import "../Controls2"
+import "../Controls2/TextTypes"
+import "../Config"
+import "../Components"
+
+PageType {
+    id: root
+
+    property var processedServer
+
+    Connections {
+        target: ServersModel
+
+        function onProcessedServerChanged() {
+            root.processedServer = proxyServersModel.get(0)
+        }
+    }
+
+    SortFilterProxyModel {
+        id: proxyServersModel
+        objectName: "proxyServersModel"
+
+        sourceModel: ServersModel
+        filters: [
+            ValueFilter {
+                roleName: "isCurrentlyProcessed"
+                value: true
+            }
+        ]
+
+        Component.onCompleted: {
+            root.processedServer = proxyServersModel.get(0)
+        }
+    }
+
+    ListViewType {
+        id: menuContent
+
+        anchors.fill: parent
+
+        model: XRayConfigsModel
+
+        currentIndex: 0
+
+        ButtonGroup {
+            id: containersRadioButtonGroup
+        }
+
+        header: ColumnLayout {
+            width: menuContent.width
+
+            spacing: 4
+
+            BackButtonType {
+                id: backButton
+                objectName: "backButton"
+
+                Layout.topMargin: 20 + SettingsController.safeAreaTopMargin
+            }
+
+            HeaderTypeWithButton {
+                id: headerContent
+                objectName: "headerContent"
+
+                Layout.fillWidth: true
+                Layout.leftMargin: 16
+                Layout.rightMargin: 16
+                Layout.bottomMargin: 10
+
+                actionButtonImage: "qrc:/images/controls/settings.svg"
+
+                headerText: root.processedServer.name
+
+                actionButtonFunction: function() {
+                    /* TODO: chnge server info to processed
+                    PageController.showBusyIndicator(true)
+                    let result = ApiSettingsController.getAccountInfo(false)
+                    PageController.showBusyIndicator(false)
+                    if (!result) {
+                        return
+                    }*/
+
+                    PageController.goToPage(PageEnum.PageSettingsXRayServerInfo)
+                }
+            }
+        }
+
+        delegate: ColumnLayout {
+            id: content
+
+            width: menuContent.width
+            height: content.implicitHeight
+
+            RowLayout {
+                VerticalRadioButton {
+                    id: containerRadioButton
+
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    // TODO: proper name and description
+                    // e.g.: [DE] VMESS - WS
+                    //       VMES/WS/None
+                    text: configName
+
+                    ButtonGroup.group: containersRadioButtonGroup
+
+                    imageSource: "qrc:/images/controls/download.svg"
+
+                    checked: index === XRayConfigsModel.currentIndex
+                    checkable: !ConnectionController.isConnected
+
+                    onClicked: {
+                        if (ConnectionController.isConnectionInProgress) {
+                            PageController.showNotificationMessage(qsTr("Unable change config while trying to make an active connection"))
+                            return
+                        }
+                        if (ConnectionController.isConnected) {
+                            PageController.showNotificationMessage(qsTr("Unable change config while there is an active connection"))
+                            return
+                        }
+
+                        if (index !== XRayConfigsModel.currentIndex) {
+                            PageController.showBusyIndicator(true)
+                            var prevIndex = XRayConfigsModel.currentIndex
+                            XRayConfigsModel.currentIndex = index
+                            // TODO: properly realize switching between configs
+                            if (!XRayConfigsController.updateServer(ServersModel.defaultIndex, configCode, configName)) {
+                                XRayConfigsModel.currentIndex = prevIndex
+                            }
+                            PageController.showBusyIndicator(false)
+                        }
+                    }
+
+                    Keys.onEnterPressed: {
+                        if (checkable) {
+                            checked = true
+                        }
+                        containerRadioButton.clicked()
+                    }
+                    Keys.onReturnPressed: {
+                        if (checkable) {
+                            checked = true
+                        }
+                        containerRadioButton.clicked()
+                    }
+                }
+            }
+
+            DividerType {
+                Layout.fillWidth: true
+            }
+        }
+    }
+}

@@ -41,6 +41,8 @@ namespace PageLoader
         PageSettingsApiNativeConfigs,
         PageSettingsApiDevices,
         PageSettingsApiSubscriptionKey,
+        PageSettingsXRayAvailableConfigs,
+        PageSettingsXRayServerInfo,
         PageSettingsKillSwitchExceptions,
 
         PageServiceSftpSettings,
