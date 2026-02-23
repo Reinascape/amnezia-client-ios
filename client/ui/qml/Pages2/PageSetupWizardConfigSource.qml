@@ -198,8 +198,8 @@ PageType {
 
                 clickedFunc: function() {
                     if (isValidUrl(textKey.textField.text)) {
-                        ImportController.httpGet(textKey.textField.text)
-                        return
+                        ImportController.importLink(textKey.textField.text)
+                        PageController.goToPageHome()
                     }
                     if (ImportController.extractConfigFromData(textKey.textField.text)) {
                         PageController.goToPage(PageEnum.PageSetupWizardViewConfig)

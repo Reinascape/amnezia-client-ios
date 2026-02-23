@@ -31,7 +31,7 @@ public:
 public slots:
     void importConfig();
     void clearConfigFileName();
-    bool httpGet(const QUrl &url);
+    bool importLink(const QUrl &url);
     bool isValidBase64(const QByteArray &input);
     QByteArray base64Decode(const QByteArray &input);
     bool extractConfigFromFile(const QString &fileName);

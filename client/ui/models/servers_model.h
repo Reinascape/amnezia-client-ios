@@ -52,7 +52,9 @@ public:
         AdDescriptionRole,
         AdEndpointRole,
 
-        HasAmneziaDns
+        HasAmneziaDns,
+
+        IsXRayConfigSelectionAvailableRole
     };
 
     ServersModel(std::shared_ptr<Settings> settings, QObject *parent = nullptr);

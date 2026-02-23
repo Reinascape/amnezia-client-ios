@@ -25,6 +25,8 @@ namespace
 
         constexpr char publicKeyInfo[] = "public_key";
         constexpr char expiresAt[] = "expires_at";
+
+        constexpr char xraySubscriptionConfig[] = "xray_subscription_config";
     }
 
     QString normalizeVpnKey(const QString &vpnKey)
@@ -178,6 +180,9 @@ QVariant ServersModel::data(const QModelIndex &index, int role) const
     }
     case AdEndpointRole: {
         return apiConfig.value(apiDefs::key::serviceInfo).toObject().value(apiDefs::key::adEndpoint).toString();
+    }
+    case IsXRayConfigSelectionAvailableRole: {
+        return !server.value(configKey::xraySubscriptionConfig).toArray().isEmpty();
     }
     }
 
@@ -442,6 +447,8 @@ QHash<int, QByteArray> ServersModel::roleNames() const
     roles[AdHeaderRole] = "adHeader";
     roles[AdDescriptionRole] = "adDescription";
     roles[AdEndpointRole] = "adEndpoint";
+
+    roles[IsXRayConfigSelectionAvailableRole] = "isXRayConfigSelectionAvailable";
 
     return roles;
 }

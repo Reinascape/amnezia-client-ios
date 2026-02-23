@@ -49,7 +49,7 @@ PageType {
 
         anchors.fill: parent
 
-        model: XRayConfigsModel
+        model: ServersModel
 
         currentIndex: 0
 
@@ -83,14 +83,6 @@ PageType {
                 headerText: root.processedServer.name
 
                 actionButtonFunction: function() {
-                    /* TODO: chnge server info to processed
-                    PageController.showBusyIndicator(true)
-                    let result = ApiSettingsController.getAccountInfo(false)
-                    PageController.showBusyIndicator(false)
-                    if (!result) {
-                        return
-                    }*/
-
                     PageController.goToPage(PageEnum.PageSettingsXRayServerInfo)
                 }
             }

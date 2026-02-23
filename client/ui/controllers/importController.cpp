@@ -77,7 +77,7 @@ ImportController::ImportController(const QSharedPointer<ServersModel> &serversMo
 #endif
 }
 
-bool ImportController::httpGet(const QUrl &url)
+bool ImportController::importLink(const QUrl &url)
 {
     QNetworkAccessManager manager;
 
@@ -103,33 +103,41 @@ bool ImportController::httpGet(const QUrl &url)
     QByteArray decoded;
     QString text;
     if (isValidBase64(data)) {
-        qDebug() << "Data is a base64 string\n";
         decoded = base64Decode(data);
         text = QString::fromUtf8(decoded).trimmed();
     } else {
-        qDebug() << "Data isn't a base64 string\n";
         data.replace('\r', "");
         text = QString::fromUtf8(data).trimmed();
     }
     QStringList configs = text.split('\n', Qt::SkipEmptyParts);
 
-    qDebug() << decoded << "\n";
-    qDebug() << text << "\n";
+    QJsonArray configsArray;
 
     for (const QString &cfg : configs) {
-        if (cfg.startsWith("vless://"))
-            qDebug() << cfg;
-        else if (cfg.startsWith("vmess://"))
-            qDebug() << cfg;
-        else if (cfg.startsWith("trojan://"))
-            qDebug() << cfg;
-        else if (cfg.startsWith("ss://"))
-            qDebug() << cfg;
-        else if (cfg.startsWith("ssd://"))
-            qDebug() << cfg;
+        if (cfg.startsWith("vless://") || cfg.startsWith("vmess://") || cfg.startsWith("trojan://")
+            || cfg.startsWith("ss://") || cfg.startsWith("ssd://"))
+            configsArray.append(cfg);
         else
             qDebug() << "Unknown protocol:\n" << cfg.left(10);
     }
+
+    extractConfigFromData(configsArray.at(0).toString());
+
+    QJsonObject serverConfig;
+
+    for (auto it = m_config.begin(); it != m_config.end(); ++it) {
+        serverConfig.insert(it.key(), it.value());
+    }
+
+    serverConfig.insert("xray_subscription_config", configsArray);
+    serverConfig.insert("xray_subscription_config_current", 0);
+
+    m_serversModel->addServer(serverConfig);
+    emit importFinished();
+
+    m_config = {};
+    m_configFileName.clear();
+    m_maliciousWarningText.clear();
 
     return true;
 }
@@ -161,10 +169,6 @@ bool ImportController::isValidBase64(const QByteArray &input)
     return !decoded.isEmpty();
 }
 
-static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        "abcdefghijklmnopqrstuvwxyz"
-                                        "0123456789+/";
-
 QByteArray ImportController::base64Decode(const QByteArray &input)
 {
     std::string clean(input.constData(), input.length());
@@ -178,6 +182,10 @@ QByteArray ImportController::base64Decode(const QByteArray &input)
 
     while (clean.size() % 4 != 0)
         clean += '=';
+
+    static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                            "abcdefghijklmnopqrstuvwxyz"
+                                            "0123456789+/";
 
     std::string output;
     std::vector<int> T(256, -1);
