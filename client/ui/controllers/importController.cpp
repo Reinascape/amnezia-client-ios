@@ -111,24 +111,30 @@ bool ImportController::importLink(const QUrl &url)
     }
     QStringList configs = text.split('\n', Qt::SkipEmptyParts);
 
+    QJsonObject obj;
     QJsonArray configsArray;
 
     for (const QString &cfg : configs) {
         if (cfg.startsWith("vless://") || cfg.startsWith("vmess://") || cfg.startsWith("trojan://")
-            || cfg.startsWith("ss://") || cfg.startsWith("ssd://"))
-            configsArray.append(cfg);
-        else
+            || cfg.startsWith("ss://") || cfg.startsWith("ssd://")) {
+            extractConfigFromData(cfg);
+            obj["config_name"] = m_config.value(config_key::description);
+            qDebug() << m_config.value(config_key::description);
+            obj["config"] = cfg;
+            configsArray.append(obj);
+        } else
             qDebug() << "Unknown protocol:\n" << cfg.left(10);
     }
 
-    extractConfigFromData(configsArray.at(0).toString());
+    extractConfigFromData(configsArray.first().toObject().value("config").toString());
 
     QJsonObject serverConfig;
 
     for (auto it = m_config.begin(); it != m_config.end(); ++it) {
         serverConfig.insert(it.key(), it.value());
     }
-
+    // TODO: proper name instead of XRaySubLink Test
+    serverConfig.insert("description", "XRaySubLink Test");
     serverConfig.insert("xray_subscription_config", configsArray);
     serverConfig.insert("xray_subscription_config_current", 0);
 

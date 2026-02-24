@@ -116,6 +116,11 @@ public slots:
     const ServerCredentials getProcessedServerCredentials();
     const ServerCredentials getServerCredentials(const int index);
 
+    int getCurrentConfigIndex();
+    void setCurrentConfigIndex(const int &index);
+    const QString getConfigName(const int &index);
+    const QJsonArray getConfigNames();
+
     void addServer(const QJsonObject &server);
     void editServer(const QJsonObject &server, const int serverIndex);
     void removeServer();

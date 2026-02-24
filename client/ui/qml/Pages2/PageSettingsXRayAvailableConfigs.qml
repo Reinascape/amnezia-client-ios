@@ -49,7 +49,7 @@ PageType {
 
         anchors.fill: parent
 
-        model: ServersModel
+        model: xrayConfigs
 
         currentIndex: 0
 
@@ -100,16 +100,15 @@ PageType {
 
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
-                    // TODO: proper name and description
-                    // e.g.: [DE] VMESS - WS
-                    //       VMES/WS/None
-                    text: configName
+                    // TODO: add description
+                    //  e.g.   VMES/WS/None
+                    text: model.title
 
                     ButtonGroup.group: containersRadioButtonGroup
 
                     imageSource: "qrc:/images/controls/download.svg"
 
-                    checked: index === XRayConfigsModel.currentIndex
+                    checked: index === ServersModel.getCurrentConfigIndex()
                     checkable: !ConnectionController.isConnected
 
                     onClicked: {
@@ -122,14 +121,10 @@ PageType {
                             return
                         }
 
-                        if (index !== XRayConfigsModel.currentIndex) {
+                        if (index !== ServersModel.getCurrentConfigIndex()) {
                             PageController.showBusyIndicator(true)
-                            var prevIndex = XRayConfigsModel.currentIndex
-                            XRayConfigsModel.currentIndex = index
-                            // TODO: properly realize switching between configs
-                            if (!XRayConfigsController.updateServer(ServersModel.defaultIndex, configCode, configName)) {
-                                XRayConfigsModel.currentIndex = prevIndex
-                            }
+                            var prevIndex = ServersModel.getCurrentConfigIndex()
+                            ServersModel.setCurrentConfigIndex(index)
                             PageController.showBusyIndicator(false)
                         }
                     }
@@ -152,6 +147,19 @@ PageType {
             DividerType {
                 Layout.fillWidth: true
             }
+        }
+    }
+
+    ListModel {
+        id: xrayConfigs
+    }
+
+    Component.onCompleted: {
+        const names = ServersModel.getConfigNames()
+        xrayConfigs.clear()
+
+        for (let i = 0; i < names.length; ++i) {
+            xrayConfigs.append({ title: names[i] })
         }
     }
 }

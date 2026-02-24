@@ -27,6 +27,9 @@ namespace
         constexpr char expiresAt[] = "expires_at";
 
         constexpr char xraySubscriptionConfig[] = "xray_subscription_config";
+        constexpr char xraySubscriptionConfigName[] = "config_name";
+        constexpr char xraySubscriptionConfigString[] = "config";
+        constexpr char xraySubscriptionConfigCurrent[] = "xray_subscription_config_current";
     }
 
     QString normalizeVpnKey(const QString &vpnKey)
@@ -251,8 +254,14 @@ const QString ServersModel::getDefaultServerDescriptionCollapsed()
     const QJsonObject serverConfig = m_servers.at(m_defaultServerIndex).toObject();
     const auto configVersion = serverConfig.value(config_key::configVersion).toInt();
     auto description = getServerDescription(serverConfig, m_defaultServerIndex);
+    auto configName = getConfigName(getCurrentConfigIndex());
+
     if (configVersion) {
         return description;
+    }
+
+    if (!configName.isEmpty()) {
+        return configName;
     }
 
     auto container = ContainerProps::containerFromString(serverConfig.value(config_key::defaultContainer).toString());
@@ -278,8 +287,14 @@ const QString ServersModel::getDefaultServerDescriptionExpanded()
     const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
     const auto configVersion = server.value(config_key::configVersion).toInt();
     auto description = getServerDescription(server, m_defaultServerIndex);
+    auto configName = getConfigName(getCurrentConfigIndex());
+
     if (configVersion) {
         return description;
+    }
+
+    if (!configName.isEmpty()) {
+        return configName;
     }
 
     return description += server.value(config_key::hostName).toString();
@@ -326,6 +341,35 @@ const ServerCredentials ServersModel::getProcessedServerCredentials()
 const ServerCredentials ServersModel::getServerCredentials(const int index)
 {
     return serverCredentials(index);
+}
+
+int ServersModel::getCurrentConfigIndex()
+{
+    const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
+    return server.value(configKey::xraySubscriptionConfigCurrent).toInt();
+}
+
+void ServersModel::setCurrentConfigIndex(const int &index)
+{
+    QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
+    server.insert(configKey::xraySubscriptionConfigCurrent, index);
+}
+
+const QString ServersModel::getConfigName(const int &index)
+{
+    const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
+    QJsonArray configsArray = server.value(configKey::xraySubscriptionConfig).toArray();
+    return configsArray.at(index).toObject().value(configKey::xraySubscriptionConfigName).toString();
+}
+
+const QJsonArray ServersModel::getConfigNames()
+{
+    const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
+    QJsonArray configsArray = server.value(configKey::xraySubscriptionConfig).toArray();
+    QJsonArray configsNamesArray;
+    for (int i = 0; i < configsArray.count(); ++i)
+        configsNamesArray.append(configsArray.at(i).toObject().value(configKey::xraySubscriptionConfigName).toString());
+    return configsNamesArray;
 }
 
 bool ServersModel::isDefaultServerCurrentlyProcessed()
