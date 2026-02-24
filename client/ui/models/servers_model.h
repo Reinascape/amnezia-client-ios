@@ -120,6 +120,7 @@ public slots:
     void setCurrentConfigIndex(const int &index);
     const QString getConfigName(const int &index);
     const QJsonArray getConfigNames();
+    const QString getConfigString(const int &index);
 
     void addServer(const QJsonObject &server);
     void editServer(const QJsonObject &server, const int serverIndex);

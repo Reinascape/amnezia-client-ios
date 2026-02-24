@@ -372,6 +372,13 @@ const QJsonArray ServersModel::getConfigNames()
     return configsNamesArray;
 }
 
+const QString ServersModel::getConfigString(const int &index)
+{
+    const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
+    QJsonArray configsArray = server.value(configKey::xraySubscriptionConfig).toArray();
+    return configsArray.at(index).toObject().value(configKey::xraySubscriptionConfigString).toString();
+}
+
 bool ServersModel::isDefaultServerCurrentlyProcessed()
 {
     return m_defaultServerIndex == m_processedServerIndex;

@@ -117,6 +117,7 @@ bool ImportController::importLink(const QUrl &url)
     for (const QString &cfg : configs) {
         if (cfg.startsWith("vless://") || cfg.startsWith("vmess://") || cfg.startsWith("trojan://")
             || cfg.startsWith("ss://") || cfg.startsWith("ssd://")) {
+            // TODO: fix config_key::description for some configs
             extractConfigFromData(cfg);
             obj["config_name"] = m_config.value(config_key::description);
             qDebug() << m_config.value(config_key::description);
@@ -134,12 +135,38 @@ bool ImportController::importLink(const QUrl &url)
         serverConfig.insert(it.key(), it.value());
     }
     // TODO: proper name instead of XRaySubLink Test
-    serverConfig.insert("description", "XRaySubLink Test");
+    serverConfig.insert(config_key::description, "XRaySubLink Test");
     serverConfig.insert("xray_subscription_config", configsArray);
     serverConfig.insert("xray_subscription_config_current", 0);
 
     m_serversModel->addServer(serverConfig);
     emit importFinished();
+
+    m_config = {};
+    m_configFileName.clear();
+    m_maliciousWarningText.clear();
+
+    return true;
+}
+
+// TODO: remove configIndex and fix bug with "xray_subscription_config_current" value saving
+bool ImportController::editServerConfigWithData(QString data, int serverIndex, int configIndex)
+{
+    m_maliciousWarningText.clear();
+
+    extractConfigFromData(data);
+
+    QJsonObject serverCurrentConfig = m_serversModel->getServerConfig(serverIndex);
+    QJsonObject serverConfig;
+    
+    for (auto it = m_config.begin(); it != m_config.end(); ++it) {
+        serverConfig.insert(it.key(), it.value());
+    }
+    serverConfig.insert(config_key::description, serverCurrentConfig.value(config_key::description));
+    serverConfig.insert("xray_subscription_config", serverCurrentConfig.value("xray_subscription_config"));
+    serverConfig.insert("xray_subscription_config_current", configIndex);
+
+    m_serversModel->editServer(serverConfig, serverIndex);
 
     m_config = {};
     m_configFileName.clear();

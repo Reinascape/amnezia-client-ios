@@ -123,8 +123,8 @@ PageType {
 
                         if (index !== ServersModel.getCurrentConfigIndex()) {
                             PageController.showBusyIndicator(true)
-                            var prevIndex = ServersModel.getCurrentConfigIndex()
                             ServersModel.setCurrentConfigIndex(index)
+                            ImportController.editServerConfigWithData(ServersModel.getConfigString(index), ServersModel.getProcessedServerIndex(), index)
                             PageController.showBusyIndicator(false)
                         }
                     }
