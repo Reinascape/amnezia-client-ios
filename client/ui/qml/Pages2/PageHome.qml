@@ -380,7 +380,7 @@ PageType {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                     spacing: 8
 
-                    visible: !ServersModel.isDefaultServerFromApi || !ServersModel.isDefaultServerContainXRayConfigs
+                    visible: !ServersModel.isDefaultServerFromApi && !ServersModel.isDefaultServerContainXRayConfigs
 
                     DropDownType {
                         id: containersDropDown
