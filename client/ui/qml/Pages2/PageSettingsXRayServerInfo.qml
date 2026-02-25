@@ -29,7 +29,7 @@ PageType {
 
         readonly property string title: qsTr("Configuration Last Update")
         readonly property string contentKey: "20 dec 2024 22:10"
-        readonly property string objectImageSource: "qrc:/images/controls/info.svg" // reload img
+        readonly property string objectImageSource: "qrc:/images/controls/refresh-cw.svg"
         readonly property bool isRichText: true
     }
 
@@ -38,7 +38,7 @@ PageType {
 
         readonly property string title: qsTr("Send")
         readonly property string contentKey: "48,9 MB"
-        readonly property string objectImageSource: "qrc:/images/controls/history.svg" // arrow-up img
+        readonly property string objectImageSource: "qrc:/images/controls/arrow-up.svg"
         readonly property bool isRichText: false
     }
 
@@ -47,7 +47,7 @@ PageType {
 
         readonly property string title: qsTr("Downloaded")
         readonly property string contentKey: "2,78 GB"
-        readonly property string objectImageSource: "qrc:/images/controls/monitor.svg" // arrow-down img
+        readonly property string objectImageSource: "qrc:/images/controls/arrow-down.svg"
         readonly property bool isRichText: false
     }
 
@@ -121,10 +121,10 @@ PageType {
             spacing: 0
 /*
             Connections {
-                target: ApiAccountInfoModel
+                target: ServersModel
 
                 function onModelReset() {
-                    delegateItem.rightText = ApiAccountInfoModel.data(contentKey)
+                    delegateItem.rightText = ServersModel.data(contentKey)
                 }
             }
 */
@@ -136,7 +136,7 @@ PageType {
 
                 imageSource: objectImageSource
                 leftText: title
-                rightText: contentKey // ApiAccountInfoModel.data(contentKey)
+                rightText: contentKey // ServersModel.data(contentKey)
                 rightTextFormat: isRichText ? Text.RichText : Text.PlainText
 
                 visible: rightText !== ""
@@ -174,8 +174,7 @@ PageType {
                             PageController.showNotificationMessage(qsTr("Cannot reload config during active connection"))
                         } else {
                             PageController.showBusyIndicator(true)
-                            // TODO: server config reload function
-                            PageController.showNotificationMessage(qsTr("Config reloaded"))
+                            InstallController.rebootProcessedServer()
                             PageController.showBusyIndicator(false)
                         }
                     }
@@ -210,8 +209,7 @@ PageType {
                             PageController.showNotificationMessage(qsTr("Cannot remove server during active connection"))
                         } else {
                             PageController.showBusyIndicator(true)
-                            // TODO: server remove function
-                            PageController.showNotificationMessage(qsTr("Server removed"))
+                            InstallController.removeProcessedServer()
                             PageController.showBusyIndicator(false)
                         }
                     }
