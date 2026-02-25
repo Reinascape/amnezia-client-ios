@@ -120,7 +120,6 @@ bool ImportController::importLink(const QUrl &url)
             // TODO: fix config_key::description for some configs
             extractConfigFromData(cfg);
             obj["config_name"] = m_config.value(config_key::description);
-            qDebug() << m_config.value(config_key::description);
             obj["config"] = cfg;
             configsArray.append(obj);
         } else
@@ -139,12 +138,7 @@ bool ImportController::importLink(const QUrl &url)
     serverConfig.insert("xray_subscription_config", configsArray);
     serverConfig.insert("xray_subscription_config_current", 0);
 
-    m_serversModel->addServer(serverConfig);
-    emit importFinished();
-
-    m_config = {};
-    m_configFileName.clear();
-    m_maliciousWarningText.clear();
+    m_config = serverConfig;
 
     return true;
 }
