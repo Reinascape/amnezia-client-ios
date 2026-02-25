@@ -134,7 +134,7 @@ bool ImportController::importLink(const QUrl &url)
         serverConfig.insert(it.key(), it.value());
     }
     // TODO: proper name instead of XRaySubLink Test
-    serverConfig.insert(config_key::description, "XRaySubLink Test");
+    serverConfig.insert(config_key::description, m_settings->nextAvailableServerName());
     serverConfig.insert("xray_subscription_config", configsArray);
     serverConfig.insert("xray_subscription_config_current", 0);
 
