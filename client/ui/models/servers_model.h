@@ -80,6 +80,8 @@ public:
                        defaultServerDefaultContainerChanged)
     Q_PROPERTY(bool isDefaultServerFromApi READ isDefaultServerFromApi NOTIFY defaultServerIndexChanged)
 
+    Q_PROPERTY(bool isDefaultServerContainXRayConfigs READ isDefaultServerContainXRayConfigs NOTIFY defaultServerIndexChanged)
+
     Q_PROPERTY(bool hasServersFromGatewayApi READ hasServersFromGatewayApi NOTIFY hasServersFromGatewayApiChanged)
 
     Q_PROPERTY(int processedIndex READ getProcessedServerIndex WRITE setProcessedServerIndex NOTIFY processedServerIndexChanged)
@@ -101,6 +103,8 @@ public slots:
     const QString getDefaultServerDefaultContainerName();
     bool isDefaultServerCurrentlyProcessed();
     bool isDefaultServerFromApi();
+
+    bool isDefaultServerContainXRayConfigs();
 
     bool isProcessedServerHasWriteAccess();
     bool isDefaultServerHasWriteAccess();

@@ -390,6 +390,11 @@ bool ServersModel::isDefaultServerFromApi()
             || data(m_defaultServerIndex, IsServerFromGatewayApiRole).toBool();
 }
 
+bool ServersModel::isDefaultServerContainXRayConfigs()
+{
+    return data(m_defaultServerIndex, IsXRayConfigSelectionAvailableRole).toBool();
+}
+
 bool ServersModel::isProcessedServerHasWriteAccess()
 {
     return qvariant_cast<bool>(data(m_processedServerIndex, HasWriteAccessRole));
