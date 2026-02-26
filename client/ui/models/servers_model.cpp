@@ -343,16 +343,17 @@ const ServerCredentials ServersModel::getServerCredentials(const int index)
     return serverCredentials(index);
 }
 
-int ServersModel::getCurrentConfigIndex()
+const int ServersModel::getCurrentConfigIndex()
 {
     const QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
     return server.value(configKey::xraySubscriptionConfigCurrent).toInt();
 }
 
-void ServersModel::setCurrentConfigIndex(const int &index)
+void ServersModel::setCurrentConfigIndex(const int index)
 {
     QJsonObject server = m_servers.at(m_defaultServerIndex).toObject();
     server.insert(configKey::xraySubscriptionConfigCurrent, index);
+    m_servers[m_defaultServerIndex] = server;
 }
 
 const QString ServersModel::getConfigName(const int &index)

@@ -120,8 +120,8 @@ public slots:
     const ServerCredentials getProcessedServerCredentials();
     const ServerCredentials getServerCredentials(const int index);
 
-    int getCurrentConfigIndex();
-    void setCurrentConfigIndex(const int &index);
+    const int getCurrentConfigIndex();
+    void setCurrentConfigIndex(const int index);
     const QString getConfigName(const int &index);
     const QJsonArray getConfigNames();
     const QString getConfigString(const int &index);

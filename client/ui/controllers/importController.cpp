@@ -133,7 +133,7 @@ bool ImportController::importLink(const QUrl &url)
     for (auto it = m_config.begin(); it != m_config.end(); ++it) {
         serverConfig.insert(it.key(), it.value());
     }
-    // TODO: proper name instead of XRaySubLink Test
+    
     serverConfig.insert(config_key::description, m_settings->nextAvailableServerName());
     serverConfig.insert("xray_subscription_config", configsArray);
     serverConfig.insert("xray_subscription_config_current", 0);
@@ -143,8 +143,7 @@ bool ImportController::importLink(const QUrl &url)
     return true;
 }
 
-// TODO: remove configIndex and fix bug with "xray_subscription_config_current" value saving
-bool ImportController::editServerConfigWithData(QString data, int serverIndex, int configIndex)
+bool ImportController::editServerConfigWithData(QString data, int serverIndex)
 {
     m_maliciousWarningText.clear();
 
@@ -158,7 +157,7 @@ bool ImportController::editServerConfigWithData(QString data, int serverIndex, i
     }
     serverConfig.insert(config_key::description, serverCurrentConfig.value(config_key::description));
     serverConfig.insert("xray_subscription_config", serverCurrentConfig.value("xray_subscription_config"));
-    serverConfig.insert("xray_subscription_config_current", configIndex);
+    serverConfig.insert("xray_subscription_config_current", m_serversModel->getCurrentConfigIndex());
 
     m_serversModel->editServer(serverConfig, serverIndex);
 

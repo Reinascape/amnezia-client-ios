@@ -34,7 +34,7 @@ public slots:
     bool importLink(const QUrl &url);
     bool isValidBase64(const QByteArray &input);
     QByteArray base64Decode(const QByteArray &input);
-    bool editServerConfigWithData(QString data, int serverIndex, int configIndex);
+    bool editServerConfigWithData(QString data, int serverIndex);
     bool extractConfigFromFile(const QString &fileName);
     bool extractConfigFromData(QString data);
     bool extractConfigFromQr(const QByteArray &data);
