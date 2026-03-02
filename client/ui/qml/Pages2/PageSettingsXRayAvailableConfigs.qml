@@ -100,8 +100,7 @@ PageType {
 
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
-                    // TODO: add description
-                    //  e.g.   VMES/WS/None
+
                     text: model.title
 
                     ButtonGroup.group: containersRadioButtonGroup

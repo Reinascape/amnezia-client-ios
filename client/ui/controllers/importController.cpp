@@ -117,10 +117,14 @@ bool ImportController::importLink(const QUrl &url)
     for (const QString &cfg : configs) {
         if (cfg.startsWith("vless://") || cfg.startsWith("vmess://") || cfg.startsWith("trojan://")
             || cfg.startsWith("ss://") || cfg.startsWith("ssd://")) {
-            // TODO: fix config_key::description for some configs
             extractConfigFromData(cfg);
-            obj["config_name"] = m_config.value(config_key::description);
+
+            QUrl url(cfg);
+            QUrlQuery query(url);
+            QString security = query.queryItemValue("security").isEmpty() ? "None" : "Reality";
+            obj["config_name"] = QUrl::fromPercentEncoding(m_config.value(config_key::description).toString().toUtf8()) + " (" + security + ")";
             obj["config"] = cfg;
+
             configsArray.append(obj);
         } else
             qDebug() << "Unknown protocol:\n" << cfg.left(10);
