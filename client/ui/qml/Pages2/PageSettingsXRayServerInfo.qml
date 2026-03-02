@@ -17,40 +17,6 @@ import "../Components"
 PageType {
     id: root
 
-    property list<QtObject> labelsModel: [
-        lastUpdateObject,
-        sendObject,
-        downloadedObject
-    ]
-
-    // TODO: contentKey functionality
-    QtObject {
-        id: lastUpdateObject
-
-        readonly property string title: qsTr("Configuration Last Update")
-        readonly property string contentKey: "20 dec 2024 22:10"
-        readonly property string objectImageSource: "qrc:/images/controls/refresh-cw.svg"
-        readonly property bool isRichText: true
-    }
-
-    QtObject {
-        id: sendObject
-
-        readonly property string title: qsTr("Send")
-        readonly property string contentKey: "48,9 MB"
-        readonly property string objectImageSource: "qrc:/images/controls/arrow-up.svg"
-        readonly property bool isRichText: false
-    }
-
-    QtObject {
-        id: downloadedObject
-
-        readonly property string title: qsTr("Downloaded")
-        readonly property string contentKey: "2,78 GB"
-        readonly property string objectImageSource: "qrc:/images/controls/arrow-down.svg"
-        readonly property bool isRichText: false
-    }
-
     property var processedServer
 
     Connections {
@@ -83,7 +49,7 @@ PageType {
 
         anchors.fill: parent
 
-        model: labelsModel
+        model: 1
 
         header: ColumnLayout {
             width: listView.width
@@ -113,33 +79,6 @@ PageType {
                 actionButtonFunction: function() {
                     serverNameEditDrawer.openTriggered()
                 }
-            }
-        }
-
-        delegate: ColumnLayout {
-            width: listView.width
-            spacing: 0
-/*
-            Connections {
-                target: ServersModel
-
-                function onModelReset() {
-                    delegateItem.rightText = ServersModel.data(contentKey)
-                }
-            }
-*/
-            LabelWithImageType {
-                id: delegateItem
-
-                Layout.fillWidth: true
-                Layout.margins: 16
-
-                imageSource: objectImageSource
-                leftText: title
-                rightText: contentKey // ServersModel.data(contentKey)
-                rightTextFormat: isRichText ? Text.RichText : Text.PlainText
-
-                visible: rightText !== ""
             }
         }
 
