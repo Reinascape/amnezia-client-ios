@@ -151,7 +151,6 @@ PageType {
 
                 onToggled: function () {
                     if (checked !== isEnabled) {
-                        // Save state for rollback on error
                         previousEnabled = isEnabled
                         previousContainerStatus = containerStatus
                         isEnabled = checked
@@ -289,7 +288,6 @@ PageType {
                         }
                     }
 
-                    // Reveal button
                     ImageButtonType {
                         implicitWidth: 40
                         implicitHeight: 40
@@ -301,7 +299,6 @@ PageType {
                         onClicked: secretText.revealed = !secretText.revealed
                     }
 
-                    // Copy button
                     ImageButtonType {
                         implicitWidth: 40
                         implicitHeight: 40
@@ -315,7 +312,6 @@ PageType {
                     }
                 }
 
-                // Generate button
                 BasicButtonType {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
@@ -373,7 +369,6 @@ PageType {
 
                 visible: secret !== ""
 
-                // Helper: convert domain string to hex
                 function domainToHex(domain) {
                     var hex = ""
                     for (var i = 0; i < domain.length; i++) {
@@ -383,7 +378,6 @@ PageType {
                     return hex
                 }
 
-                // Compute secrets for each tab
                 function standardSecret() {
                     return secret
                 }
@@ -416,7 +410,6 @@ PageType {
                     headerText: qsTr("Connection details")
                 }
 
-                // Tab selector — Standard mode shows Standard+Padded, FakeTLS mode shows only FakeTLS
                 ButtonGroup {
                     id: connTabGroup
                 }
@@ -452,20 +445,16 @@ PageType {
                     }
                 }
 
-                // Hidden TabBar to track current index
                 TabBar {
                     id: connTabBar
                     visible: false
                     currentIndex: transportMode === "faketls" ? 2 : 0
-
-                    // Reset to correct tab when transport mode changes
                     onCurrentIndexChanged: {
                         if (transportMode === "faketls" && currentIndex !== 2) currentIndex = 2
                         if (transportMode !== "faketls" && currentIndex === 2) currentIndex = 0
                     }
                 }
 
-                // Current tab secret
                 property string activeSecret: {
                     if (connTabBar.currentIndex === 0) return standardSecret()
                     if (connTabBar.currentIndex === 1) return paddedSecret()
@@ -473,15 +462,12 @@ PageType {
                 }
 
                 onActiveSecretChanged: {
-                    // Reset QR when active secret changes (tab switch)
                     var qrCol = qrSection
                     if (qrCol && qrCol.qrVisible) {
-                        qrCol.qrSource = MtProxyConfigModel.generateQrCode(
-                            buildTgLink(activeSecret))
+                        qrCol.qrSource = MtProxyConfigModel.generateQrCode(buildTgLink(activeSecret))
                     }
                 }
 
-                // Secret row
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.bottomMargin: 4
@@ -512,9 +498,7 @@ PageType {
                     ImageButtonType {
                         implicitWidth: 40; implicitHeight: 40
                         hoverEnabled: true
-                        image: connSecretText.revealed
-                            ? "qrc:/images/controls/eye-off.svg"
-                            : "qrc:/images/controls/eye.svg"
+                        image: connSecretText.revealed ? "qrc:/images/controls/eye-off.svg" : "qrc:/images/controls/eye.svg"
                         imageColor: AmneziaStyle.color.paleGray
                         onClicked: connSecretText.revealed = !connSecretText.revealed
                     }
@@ -531,62 +515,50 @@ PageType {
                     }
                 }
 
-                // tg:// link
                 LabelWithButtonType {
                     Layout.fillWidth: true
                     Layout.leftMargin: -16
                     Layout.rightMargin: 0
                     Layout.bottomMargin: 4
-
                     text: qsTr("Telegram link (tg://)")
                     descriptionText: connDetailsBlock.buildTgLink(connDetailsBlock.activeSecret)
                     descriptionOnTop: true
                     textColor: AmneziaStyle.color.goldenApricot
-
                     rightImageSource: "qrc:/images/controls/copy.svg"
                     rightImageColor: AmneziaStyle.color.paleGray
-
                     clickedFunction: function () {
                         GC.copyToClipBoard(connDetailsBlock.buildTgLink(connDetailsBlock.activeSecret))
                         PageController.showNotificationMessage(qsTr("Copied"))
                     }
                 }
 
-                // t.me link
                 LabelWithButtonType {
                     Layout.fillWidth: true
                     Layout.leftMargin: -16
                     Layout.rightMargin: 0
                     Layout.bottomMargin: 4
-
                     text: qsTr("Telegram link (t.me)")
                     descriptionText: connDetailsBlock.buildTmeLink(connDetailsBlock.activeSecret)
                     descriptionOnTop: true
                     textColor: AmneziaStyle.color.goldenApricot
-
                     rightImageSource: "qrc:/images/controls/copy.svg"
                     rightImageColor: AmneziaStyle.color.paleGray
-
                     clickedFunction: function () {
                         GC.copyToClipBoard(connDetailsBlock.buildTmeLink(connDetailsBlock.activeSecret))
                         PageController.showNotificationMessage(qsTr("Copied"))
                     }
                 }
 
-                // Copy tg:// link button
                 BasicButtonType {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
-
                     text: qsTr("Copy tg:// link")
-
                     clickedFunc: function () {
                         GC.copyToClipBoard(connDetailsBlock.buildTgLink(connDetailsBlock.activeSecret))
                         PageController.showNotificationMessage(qsTr("Link copied"))
                     }
                 }
 
-                // QR code
                 ColumnLayout {
                     id: qrSection
                     Layout.fillWidth: true
@@ -610,14 +582,11 @@ PageType {
                             implicitHeight: 32
                             hoverEnabled: true
                             image: "qrc:/images/controls/qr-code.svg"
-                            imageColor: parent.parent.qrVisible
-                                ? AmneziaStyle.color.goldenApricot
-                                : AmneziaStyle.color.paleGray
+                            imageColor: qrSection.qrVisible ? AmneziaStyle.color.goldenApricot : AmneziaStyle.color.paleGray
                             onClicked: {
-                                var col = parent.parent
-                                col.qrVisible = !col.qrVisible
-                                if (col.qrVisible) {
-                                    col.qrSource = MtProxyConfigModel.generateQrCode(
+                                qrSection.qrVisible = !qrSection.qrVisible
+                                if (qrSection.qrVisible) {
+                                    qrSection.qrSource = MtProxyConfigModel.generateQrCode(
                                         connDetailsBlock.buildTgLink(connDetailsBlock.activeSecret))
                                 }
                             }
@@ -630,14 +599,14 @@ PageType {
                         height: 200
                         color: "white"
                         radius: 8
-                        visible: parent.qrVisible && parent.qrSource !== ""
+                        visible: qrSection.qrVisible && qrSection.qrSource !== ""
 
                         Image {
                             anchors.fill: parent
                             anchors.margins: 8
                             smooth: false
                             fillMode: Image.PreserveAspectFit
-                            source: parent.parent.qrSource
+                            source: qrSection.qrSource
                         }
                     }
                 }
@@ -648,9 +617,12 @@ PageType {
                 parent: root
 
                 anchors.fill: parent
-                expandedHeight: root.height * 0.9
+                expandedHeight: root.height
 
-                expandedStateContent: ColumnLayout {
+                expandedStateContent: Item {
+                    id: drawerRoot
+                    implicitHeight: changeSettingsDrawer.expandedHeight
+
                     property string tempPort: port
                     property string tempTag: tag
                     property string tempPublicHost: publicHost
@@ -658,40 +630,37 @@ PageType {
                     property string tempTlsDomain: tlsDomain
                     property string tempWorkersMode: workersMode
                     property string tempWorkers: workers
-                    property bool tempNatEnabled: natEnabled
+                    property bool   tempNatEnabled: natEnabled
                     property string tempNatInternalIp: natInternalIp
                     property string tempNatExternalIp: natExternalIp
-
-                    width: parent ? parent.width : 0
-                    spacing: 0
 
                     Connections {
                         target: changeSettingsDrawer
 
                         function onOpened() {
-                            tempPort = port
-                            tempTag = tag
-                            tempPublicHost = publicHost
-                            tempTransportMode = transportMode
-                            tempTlsDomain = tlsDomain
-                            tempWorkersMode = workersMode
-                            tempWorkers = workers
-                            tempNatEnabled = natEnabled
-                            tempNatInternalIp = natInternalIp
-                            tempNatExternalIp = natExternalIp
+                            drawerRoot.tempPort = port
+                            drawerRoot.tempTag = tag
+                            drawerRoot.tempPublicHost = publicHost
+                            drawerRoot.tempTransportMode = transportMode
+                            drawerRoot.tempTlsDomain = tlsDomain
+                            drawerRoot.tempWorkersMode = workersMode
+                            drawerRoot.tempWorkers = workers
+                            drawerRoot.tempNatEnabled = natEnabled
+                            drawerRoot.tempNatInternalIp = natInternalIp
+                            drawerRoot.tempNatExternalIp = natExternalIp
                         }
 
                         function onClosed() {
-                            port = tempPort
-                            tag = tempTag
-                            publicHost = tempPublicHost
-                            transportMode = tempTransportMode
-                            tlsDomain = tempTlsDomain
-                            workersMode = tempWorkersMode
-                            workers = tempWorkers
-                            natEnabled = tempNatEnabled
-                            natInternalIp = tempNatInternalIp
-                            natExternalIp = tempNatExternalIp
+                            port = drawerRoot.tempPort
+                            tag = drawerRoot.tempTag
+                            publicHost = drawerRoot.tempPublicHost
+                            transportMode = drawerRoot.tempTransportMode
+                            tlsDomain = drawerRoot.tempTlsDomain
+                            workersMode = drawerRoot.tempWorkersMode
+                            workers = drawerRoot.tempWorkers
+                            natEnabled = drawerRoot.tempNatEnabled
+                            natInternalIp = drawerRoot.tempNatInternalIp
+                            natExternalIp = drawerRoot.tempNatExternalIp
                             portTextField.textField.text = port
                             tagTextField.textField.text = tag
                             publicHostTextField.textField.text = publicHost
@@ -702,366 +671,319 @@ PageType {
                         }
                     }
 
-                    BaseHeaderType {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 32
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.bottomMargin: 16
+                    ListViewType {
+                        id: drawerListView
+                        anchors.fill: parent
+                        model: 1
 
-                        headerText: qsTr("MTProxy settings")
-                    }
+                        header: ColumnLayout {
+                            id: drawerColumnLayout
+                            width: drawerListView.width
+                            spacing: 0
 
-                    TextFieldWithHeaderType {
-                        id: publicHostTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 40
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 16
-
-                        headerText: qsTr("Public host / IP")
-                        textField.placeholderText: ServersModel.getProcessedServerData("hostName")
-                        textField.text: publicHost
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== publicHost) {
-                                publicHost = textField.text
-                            }
-                        }
-                    }
-
-                    // Transport mode selector in drawer
-                    ButtonGroup {
-                        id: drawerTransportModeGroup
-                    }
-
-                    LabelTextType {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 4
-                        text: qsTr("Transport mode")
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        spacing: 0
-
-                        HorizontalRadioButton {
-                            Layout.fillWidth: true
-                            text: qsTr("Standard")
-                            ButtonGroup.group: drawerTransportModeGroup
-                            checked: transportMode === "standard"
-                            onClicked: transportMode = "standard"
-                        }
-
-                        HorizontalRadioButton {
-                            Layout.fillWidth: true
-                            text: qsTr("FakeTLS")
-                            ButtonGroup.group: drawerTransportModeGroup
-                            checked: transportMode === "faketls"
-                            onClicked: transportMode = "faketls"
-                        }
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: tlsDomainTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 4
-
-                        visible: transportMode === "faketls"
-
-                        headerText: qsTr("TLS camouflage domain")
-                        textField.placeholderText: "google.com"
-                        textField.text: tlsDomain
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== tlsDomain) {
-                                tlsDomain = textField.text
-                            }
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.bottomMargin: 16
-                        spacing: 4
-
-                        visible: transportMode === "faketls"
-
-                        CaptionTextType {
-                            Layout.fillWidth: true
-                            text: qsTr("The domain is encoded into the FakeTLS client secret (ee + base_secret + hex(domain)). It must support HTTPS / TLS 1.3.")
-                            color: AmneziaStyle.color.mutedGray
-                            wrapMode: Text.WordWrap
-                        }
-
-                        CaptionTextType {
-                            Layout.fillWidth: true
-                            text: qsTr("⚠ Changing the domain will invalidate all previously issued FakeTLS connection links.")
-                            color: AmneziaStyle.color.goldenApricot
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: portTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 16
-
-                        headerText: qsTr("Public port")
-                        textField.placeholderText: "443"
-                        textField.text: port
-                        textField.maximumLength: 5
-                        textField.validator: IntValidator {
-                            bottom: 1; top: 65535
-                        }
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== port) {
-                                port = textField.text
-                            }
-                        }
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: tagTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 4
-
-                        headerText: qsTr("Promoted channel tag (optional)")
-                        textField.placeholderText: qsTr("leave empty if not needed")
-                        textField.text: tag
-                        textField.maximumLength: 64
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== tag) {
-                                tag = textField.text
-                            }
-                        }
-                    }
-
-                    CaptionTextType {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.bottomMargin: 16
-
-                        text: qsTr("Get a tag from @MTProxyBot to enable promoted channel and connection statistics.")
-                        color: AmneziaStyle.color.mutedGray
-                        wrapMode: Text.WordWrap
-                    }
-
-                    // Worker mode section
-                    LabelTextType {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.topMargin: 8
-                        Layout.bottomMargin: 4
-                        text: qsTr("Worker mode")
-                    }
-
-                    ButtonGroup {
-                        id: workerModeGroup
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        spacing: 0
-
-                        HorizontalRadioButton {
-                            Layout.fillWidth: true
-                            text: qsTr("Auto")
-                            ButtonGroup.group: workerModeGroup
-                            checked: workersMode === "auto"
-                            onClicked: workersMode = "auto"
-                        }
-
-                        HorizontalRadioButton {
-                            Layout.fillWidth: true
-                            text: qsTr("Manual")
-                            ButtonGroup.group: workerModeGroup
-                            checked: workersMode === "manual"
-                            onClicked: workersMode = "manual"
-                        }
-                    }
-
-                    // Warning when FakeTLS + manual workers > 0
-                    WarningType {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 8
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 4
-
-                        visible: workersMode === "manual"
-                            && transportMode === "faketls"
-                            && parseInt(workers) > 0
-
-                        iconPath: "qrc:/images/controls/alert-circle.svg"
-                        imageColor: AmneziaStyle.color.goldenApricot
-                        textColor: AmneziaStyle.color.goldenApricot
-                        backGroundColor: AmneziaStyle.color.onyxBlack
-                        textString: qsTr("Workers > 0 are not recommended for FakeTLS mode. Set to 0 for best compatibility.")
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: workersTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 8
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 16
-
-                        visible: workersMode === "manual"
-
-                        headerText: qsTr("Workers count")
-                        textField.placeholderText: "2"
-                        textField.text: workers
-                        textField.maximumLength: 3
-                        textField.validator: IntValidator {
-                            bottom: 0; top: 999
-                        }
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== workers) {
-                                workers = textField.text
-                            }
-                        }
-                    }
-
-                    // NAT settings
-                    DividerType {
-                        Layout.fillWidth: true; Layout.topMargin: 8; Layout.bottomMargin: 8
-                    }
-
-                    SwitcherType {
-                        id: natSwitch
-
-                        Layout.fillWidth: true
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 4
-
-                        text: qsTr("Server is behind NAT / Docker bridge")
-                        descriptionText: qsTr("Enable if auto-detection of external IP fails")
-                        checked: natEnabled
-
-                        onToggled: function () {
-                            if (checked !== natEnabled) {
-                                natEnabled = checked
-                            }
-                        }
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: natInternalIpTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 8
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 8
-
-                        visible: natEnabled
-
-                        headerText: qsTr("Internal IP")
-                        textField.placeholderText: "172.17.0.2"
-                        textField.text: natInternalIp
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== natInternalIp) {
-                                natInternalIp = textField.text
-                            }
-                        }
-                    }
-
-                    TextFieldWithHeaderType {
-                        id: natExternalIpTextField
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 0
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-                        Layout.bottomMargin: 16
-
-                        visible: natEnabled
-
-                        headerText: qsTr("External IP override")
-                        textField.placeholderText: "1.2.3.4"
-                        textField.text: natExternalIp
-
-                        textField.onEditingFinished: {
-                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== natExternalIp) {
-                                natExternalIp = textField.text
-                            }
-                        }
-                    }
-
-                    BasicButtonType {
-                        id: saveButton
-
-                        Layout.fillWidth: true
-                        Layout.topMargin: 24
-                        Layout.bottomMargin: 24
-                        Layout.rightMargin: 16
-                        Layout.leftMargin: 16
-
-                        text: qsTr("Change connection settings")
-
-                        clickedFunc: function () {
-                            if (!portTextField.textField.acceptableInput) {
-                                portTextField.errorText = qsTr("The port must be in the range of 1 to 65535")
-                                return
+                            BaseHeaderType {
+                                Layout.fillWidth: true
+                                Layout.topMargin: 32
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.bottomMargin: 16
+                                headerText: qsTr("MTProxy settings")
                             }
 
-                            PageController.goToPage(PageEnum.PageSetupWizardInstalling)
-                            InstallController.updateContainer(MtProxyConfigModel.getConfig())
-                            tempPort = portTextField.textField.text
-                            tempTag = tagTextField.textField.text
-                            tempPublicHost = publicHostTextField.textField.text
-                            tempTransportMode = transportMode
-                            tempTlsDomain = tlsDomainTextField.textField.text
-                            tempWorkersMode = workersMode
-                            tempWorkers = workersTextField.visible ? workersTextField.textField.text : workers
-                            tempNatEnabled = natEnabled
-                            tempNatInternalIp = natInternalIpTextField.visible ? natInternalIpTextField.textField.text : natInternalIp
-                            tempNatExternalIp = natExternalIpTextField.visible ? natExternalIpTextField.textField.text : natExternalIp
-                            changeSettingsDrawer.closeTriggered()
-                        }
-                    }
-                }
-            }
+                            TextFieldWithHeaderType {
+                                id: publicHostTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 40
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 16
+                                headerText: qsTr("Public host / IP")
+                                textField.placeholderText: ServersModel.getProcessedServerData("hostName")
+                                textField.text: publicHost
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== publicHost) publicHost = textField.text
+                                }
+                            }
 
-            // Diagnostics / Monitoring — read-only block
+                            ButtonGroup {
+                                id: drawerTransportModeGroup
+                            }
+
+                            LabelTextType {
+                                Layout.fillWidth: true
+                                Layout.topMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 4
+                                text: qsTr("Transport mode")
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                spacing: 0
+
+                                HorizontalRadioButton {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Standard")
+                                    ButtonGroup.group: drawerTransportModeGroup
+                                    checked: transportMode === "standard"
+                                    onClicked: transportMode = "standard"
+                                }
+
+                                HorizontalRadioButton {
+                                    Layout.fillWidth: true
+                                    text: qsTr("FakeTLS")
+                                    ButtonGroup.group: drawerTransportModeGroup
+                                    checked: transportMode === "faketls"
+                                    onClicked: transportMode = "faketls"
+                                }
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: tlsDomainTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 4
+                                visible: transportMode === "faketls"
+                                headerText: qsTr("TLS camouflage domain")
+                                textField.placeholderText: "google.com"
+                                textField.text: tlsDomain
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== tlsDomain) tlsDomain = textField.text
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.bottomMargin: 16
+                                spacing: 4
+                                visible: transportMode === "faketls"
+
+                                CaptionTextType {
+                                    Layout.fillWidth: true
+                                    text: qsTr("The domain is encoded into the FakeTLS client secret (ee + base_secret + hex(domain)). It must support HTTPS / TLS 1.3.")
+                                    color: AmneziaStyle.color.mutedGray
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                CaptionTextType {
+                                    Layout.fillWidth: true
+                                    text: qsTr("⚠ Changing the domain will invalidate all previously issued FakeTLS connection links.")
+                                    color: AmneziaStyle.color.goldenApricot
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: portTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 16
+                                headerText: qsTr("Public port")
+                                textField.placeholderText: "443"
+                                textField.text: port
+                                textField.maximumLength: 5
+                                textField.validator: IntValidator {
+                                    bottom: 1; top: 65535
+                                }
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== port) port = textField.text
+                                }
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: tagTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 4
+                                headerText: qsTr("Promoted channel tag (optional)")
+                                textField.placeholderText: qsTr("leave empty if not needed")
+                                textField.text: tag
+                                textField.maximumLength: 64
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== tag) tag = textField.text
+                                }
+                            }
+
+                            CaptionTextType {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                Layout.bottomMargin: 16
+                                text: qsTr("Get a tag from @MTProxyBot to enable promoted channel and connection statistics.")
+                                color: AmneziaStyle.color.mutedGray
+                                wrapMode: Text.WordWrap
+                            }
+
+                            // Worker mode section
+                            LabelTextType {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.topMargin: 8
+                                Layout.bottomMargin: 4
+                                text: qsTr("Worker mode")
+                            }
+
+                            ButtonGroup {
+                                id: workerModeGroup
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: 16
+                                Layout.rightMargin: 16
+                                spacing: 0
+
+                                HorizontalRadioButton {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Auto")
+                                    ButtonGroup.group: workerModeGroup
+                                    checked: workersMode === "auto"
+                                    onClicked: workersMode = "auto"
+                                }
+
+                                HorizontalRadioButton {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Manual")
+                                    ButtonGroup.group: workerModeGroup
+                                    checked: workersMode === "manual"
+                                    onClicked: workersMode = "manual"
+                                }
+                            }
+
+                            WarningType {
+                                Layout.fillWidth: true
+                                Layout.topMargin: 8
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 4
+                                visible: workersMode === "manual" && transportMode === "faketls" && parseInt(workers) > 0
+                                iconPath: "qrc:/images/controls/alert-circle.svg"
+                                imageColor: AmneziaStyle.color.goldenApricot
+                                textColor: AmneziaStyle.color.goldenApricot
+                                backGroundColor: AmneziaStyle.color.onyxBlack
+                                textString: qsTr("Workers > 0 are not recommended for FakeTLS mode. Set to 0 for best compatibility.")
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: workersTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 8
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 16
+                                visible: workersMode === "manual"
+                                headerText: qsTr("Workers count")
+                                textField.placeholderText: "2"
+                                textField.text: workers
+                                textField.maximumLength: 3
+                                textField.validator: IntValidator {
+                                    bottom: 0; top: 999
+                                }
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== workers) workers = textField.text
+                                }
+                            }
+
+                            // NAT settings
+                            DividerType {
+                                Layout.fillWidth: true; Layout.topMargin: 8; Layout.bottomMargin: 8
+                            }
+
+                            SwitcherType {
+                                id: natSwitch
+                                Layout.fillWidth: true
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 4
+                                text: qsTr("Server is behind NAT / Docker bridge")
+                                descriptionText: qsTr("Enable if auto-detection of external IP fails")
+                                checked: natEnabled
+                                onToggled: function () {
+                                    if (checked !== natEnabled) natEnabled = checked
+                                }
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: natInternalIpTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 8
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 8
+                                visible: natEnabled
+                                headerText: qsTr("Internal IP")
+                                textField.placeholderText: "172.17.0.2"
+                                textField.text: natInternalIp
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== natInternalIp) natInternalIp = textField.text
+                                }
+                            }
+
+                            TextFieldWithHeaderType {
+                                id: natExternalIpTextField
+                                Layout.fillWidth: true
+                                Layout.topMargin: 0
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                Layout.bottomMargin: 16
+                                visible: natEnabled
+                                headerText: qsTr("External IP override")
+                                textField.placeholderText: "1.2.3.4"
+                                textField.text: natExternalIp
+                                textField.onEditingFinished: {
+                                    textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                                    if (textField.text !== natExternalIp) natExternalIp = textField.text
+                                }
+                            }
+
+                            BasicButtonType {
+                                id: saveButton
+                                Layout.fillWidth: true
+                                Layout.topMargin: 24
+                                Layout.bottomMargin: 24
+                                Layout.rightMargin: 16
+                                Layout.leftMargin: 16
+                                text: qsTr("Change connection settings")
+                                clickedFunc: function () {
+                                    if (!portTextField.textField.acceptableInput) {
+                                        portTextField.errorText = qsTr("The port must be in the range of 1 to 65535")
+                                        return
+                                    }
+                                    PageController.goToPage(PageEnum.PageSetupWizardInstalling)
+                                    InstallController.updateContainer(MtProxyConfigModel.getConfig())
+                                    drawerRoot.tempPort = portTextField.textField.text
+                                    drawerRoot.tempTag = tagTextField.textField.text
+                                    drawerRoot.tempPublicHost = publicHostTextField.textField.text
+                                    drawerRoot.tempTransportMode = transportMode
+                                    drawerRoot.tempTlsDomain = tlsDomainTextField.textField.text
+                                    drawerRoot.tempWorkersMode = workersMode
+                                    drawerRoot.tempWorkers = workersTextField.visible ? workersTextField.textField.text : workers
+                                    drawerRoot.tempNatEnabled = natEnabled
+                                    drawerRoot.tempNatInternalIp = natInternalIpTextField.visible ? natInternalIpTextField.textField.text : natInternalIp
+                                    drawerRoot.tempNatExternalIp = natExternalIpTextField.visible ? natExternalIpTextField.textField.text : natExternalIp
+                                    changeSettingsDrawer.closeTriggered()
+                                }
+                            }
+                        }       // end ColumnLayout (header)
+                    }       // end ListViewType
+                }       // end Item (drawerRoot)
+            }           // end DrawerType2
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 24
@@ -1083,12 +1005,9 @@ PageType {
                         implicitWidth: 32
                         implicitHeight: 32
                         image: "qrc:/images/controls/refresh-cw.svg"
-                        imageColor: diagLoading
-                            ? AmneziaStyle.color.mutedGray
-                            : AmneziaStyle.color.paleGray
+                        imageColor: diagLoading ? AmneziaStyle.color.mutedGray : AmneziaStyle.color.paleGray
                         hoverEnabled: !diagLoading
                         enabled: !diagLoading
-
                         onClicked: {
                             diagLoading = true
                             InstallController.refreshMtProxyDiagnostics(parseInt(port))
@@ -1096,124 +1015,72 @@ PageType {
                     }
                 }
 
-                // Port reachable
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-
                     Rectangle {
-                        width: 8; height: 8; radius: 4
-                        color: diagClientsConnected >= 0
-                            ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed)
-                            : AmneziaStyle.color.mutedGray
+                        width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                     }
-
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        text: qsTr("Public port reachable")
-                        color: AmneziaStyle.color.paleGray
+                        Layout.fillWidth: true; text: qsTr("Public port reachable"); color: AmneziaStyle.color.paleGray
                     }
-
                     CaptionTextType {
-                        text: diagClientsConnected < 0
-                            ? qsTr("—")
-                            : (diagPortReachable ? qsTr("Yes") : qsTr("No"))
-                        color: diagClientsConnected >= 0
-                            ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed)
-                            : AmneziaStyle.color.mutedGray
+                        text: diagClientsConnected < 0 ? qsTr("—") : (diagPortReachable ? qsTr("Yes") : qsTr("No")); color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                     }
                 }
 
-                // Telegram upstream
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-
                     Rectangle {
-                        width: 8; height: 8; radius: 4
-                        color: diagClientsConnected >= 0
-                            ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed)
-                            : AmneziaStyle.color.mutedGray
+                        width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                     }
-
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        text: qsTr("Telegram upstream reachable")
-                        color: AmneziaStyle.color.paleGray
+                        Layout.fillWidth: true; text: qsTr("Telegram upstream reachable"); color: AmneziaStyle.color.paleGray
                     }
-
                     CaptionTextType {
-                        text: diagClientsConnected < 0
-                            ? qsTr("—")
-                            : (diagTelegramReachable ? qsTr("Yes") : qsTr("No"))
-                        color: diagClientsConnected >= 0
-                            ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed)
-                            : AmneziaStyle.color.mutedGray
+                        text: diagClientsConnected < 0 ? qsTr("—") : (diagTelegramReachable ? qsTr("Yes") : qsTr("No")); color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                     }
                 }
 
-                // Clients connected
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-
                     Rectangle {
-                        width: 8; height: 8; radius: 4
-                        color: diagClientsConnected >= 0
-                            ? AmneziaStyle.color.goldenApricot
-                            : AmneziaStyle.color.mutedGray
+                        width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? AmneziaStyle.color.goldenApricot : AmneziaStyle.color.mutedGray
                     }
-
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        text: qsTr("Clients connected")
-                        color: AmneziaStyle.color.paleGray
+                        Layout.fillWidth: true; text: qsTr("Clients connected"); color: AmneziaStyle.color.paleGray
                     }
-
                     CaptionTextType {
-                        text: diagClientsConnected < 0 ? qsTr("—") : diagClientsConnected.toString()
-                        color: AmneziaStyle.color.paleGray
+                        text: diagClientsConnected < 0 ? qsTr("—") : diagClientsConnected.toString(); color: AmneziaStyle.color.paleGray
                     }
                 }
 
-                // Last config refresh
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-
                     Rectangle {
-                        width: 8; height: 8; radius: 4
-                        color: diagLastConfigRefresh !== ""
-                            ? AmneziaStyle.color.mutedGray
-                            : AmneziaStyle.color.mutedGray
+                        width: 8; height: 8; radius: 4; color: AmneziaStyle.color.mutedGray
                     }
-
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        text: qsTr("Last config refresh")
-                        color: AmneziaStyle.color.paleGray
+                        Layout.fillWidth: true; text: qsTr("Last config refresh"); color: AmneziaStyle.color.paleGray
                     }
-
                     CaptionTextType {
-                        text: diagLastConfigRefresh !== "" ? diagLastConfigRefresh : qsTr("—")
-                        color: AmneziaStyle.color.mutedGray
+                        text: diagLastConfigRefresh !== "" ? diagLastConfigRefresh : qsTr("—"); color: AmneziaStyle.color.mutedGray
                     }
                 }
 
-                // Stats endpoint
                 LabelWithButtonType {
                     Layout.fillWidth: true
                     Layout.leftMargin: -16
                     Layout.rightMargin: 0
                     visible: diagStatsEndpoint !== ""
-
                     text: qsTr("Stats endpoint")
                     descriptionText: diagStatsEndpoint
                     descriptionOnTop: true
-
                     rightImageSource: "qrc:/images/controls/copy.svg"
                     rightImageColor: AmneziaStyle.color.paleGray
-
                     clickedFunction: function () {
                         GC.copyToClipBoard(diagStatsEndpoint)
                         PageController.showNotificationMessage(qsTr("Copied"))
@@ -1233,110 +1100,61 @@ PageType {
                 Layout.fillWidth: true
                 Layout.topMargin: 16
                 spacing: 0
-
                 visible: ServersModel.isProcessedServerHasWriteAccess()
 
-                // Advanced header — tap to expand/collapse
                 LabelWithButtonType {
                     id: advancedHeader
                     Layout.fillWidth: true
                     Layout.leftMargin: 0
                     Layout.rightMargin: 16
-
                     property bool expanded: false
-
                     text: qsTr("Advanced")
-                    rightImageSource: expanded
-                        ? "qrc:/images/controls/chevron-up.svg"
-                        : "qrc:/images/controls/chevron-down.svg"
+                    rightImageSource: expanded ? "qrc:/images/controls/chevron-up.svg" : "qrc:/images/controls/chevron-down.svg"
                     rightImageColor: AmneziaStyle.color.mutedGray
-
                     clickedFunction: function () {
                         expanded = !expanded
                     }
                 }
 
-                // Additional secrets — visible when expanded
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 0
                     visible: advancedHeader.expanded
 
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.topMargin: 8
-                        Layout.bottomMargin: 4
-                        text: qsTr("Additional secrets")
-                        color: AmneziaStyle.color.mutedGray
+                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.topMargin: 8; Layout.bottomMargin: 4
+                        text: qsTr("Additional secrets"); color: AmneziaStyle.color.mutedGray
                     }
-
                     CaptionTextType {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.bottomMargin: 8
+                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 8
                         text: qsTr("Add extra secrets to allow gradual migration without disconnecting existing users.")
-                        color: AmneziaStyle.color.charcoalGray
-                        wrapMode: Text.WordWrap
+                        color: AmneziaStyle.color.charcoalGray; wrapMode: Text.WordWrap
                     }
 
                     Repeater {
                         model: additionalSecrets
-
                         delegate: RowLayout {
-                            Layout.fillWidth: true
-                            Layout.leftMargin: 16
-                            Layout.rightMargin: 16
-                            Layout.bottomMargin: 4
+                            Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 4
                             spacing: 8
-
                             CaptionTextType {
-                                Layout.fillWidth: true
-                                text: modelData
-                                color: AmneziaStyle.color.paleGray
-                                elide: Text.ElideMiddle
-                                font.pixelSize: 13
+                                Layout.fillWidth: true; text: modelData; color: AmneziaStyle.color.paleGray; elide: Text.ElideMiddle; font.pixelSize: 13
                             }
-
                             ImageButtonType {
-                                implicitWidth: 32
-                                implicitHeight: 32
-                                image: "qrc:/images/controls/copy.svg"
-                                imageColor: AmneziaStyle.color.mutedGray
-                                hoverEnabled: true
-                                onClicked: {
-                                    GC.copyToClipBoard(modelData)
-                                    PageController.showNotificationMessage(qsTr("Copied"))
-                                }
+                                implicitWidth: 32; implicitHeight: 32; image: "qrc:/images/controls/copy.svg"; imageColor: AmneziaStyle.color.mutedGray; hoverEnabled: true
+                                onClicked: { GC.copyToClipBoard(modelData); PageController.showNotificationMessage(qsTr("Copied")) }
                             }
-
                             ImageButtonType {
-                                implicitWidth: 32
-                                implicitHeight: 32
-                                image: "qrc:/images/controls/trash.svg"
-                                imageColor: AmneziaStyle.color.vibrantRed
-                                hoverEnabled: true
-                                onClicked: {
-                                    MtProxyConfigModel.removeAdditionalSecret(index)
-                                    InstallController.updateContainer(MtProxyConfigModel.getConfig())
-                                }
+                                implicitWidth: 32; implicitHeight: 32; image: "qrc:/images/controls/trash.svg"; imageColor: AmneziaStyle.color.vibrantRed; hoverEnabled: true
+                                onClicked: { MtProxyConfigModel.removeAdditionalSecret(index); InstallController.updateContainer(MtProxyConfigModel.getConfig()) }
                             }
                         }
                     }
 
                     BasicButtonType {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 8
-                        Layout.leftMargin: 16
-                        Layout.rightMargin: 16
-                        Layout.bottomMargin: 8
-
+                        Layout.fillWidth: true; Layout.topMargin: 8; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 8
                         text: qsTr("Add additional secret")
-
                         clickedFunc: function () {
-                            MtProxyConfigModel.addAdditionalSecret()
+                            MtProxyConfigModel.addAdditionalSecret();
                             InstallController.updateContainer(MtProxyConfigModel.getConfig())
                         }
                     }
@@ -1345,17 +1163,13 @@ PageType {
 
             BasicButtonType {
                 id: changeSettingsButton
-
                 Layout.fillWidth: true
                 Layout.topMargin: 24
                 Layout.bottomMargin: 8
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
-
                 visible: ServersModel.isProcessedServerHasWriteAccess()
-
                 text: qsTr("Change connection settings")
-
                 clickedFunc: function () {
                     changeSettingsDrawer.openTriggered()
                 }
@@ -1363,34 +1177,26 @@ PageType {
 
             LabelWithButtonType {
                 id: removeButton
-
                 Layout.fillWidth: true
                 Layout.topMargin: 8
                 Layout.bottomMargin: 24
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
-
                 visible: ServersModel.isProcessedServerHasWriteAccess()
-
                 text: qsTr("Remove ") + ContainersModel.getProcessedContainerName()
                 textColor: AmneziaStyle.color.vibrantRed
-
                 clickedFunction: function () {
                     var headerText = qsTr("Remove %1 from server?").arg(ContainersModel.getProcessedContainerName())
                     var descriptionText = qsTr("The proxy will be stopped and all users will lose access.")
                     var yesButtonText = qsTr("Continue")
                     var noButtonText = qsTr("Cancel")
-
                     var yesButtonFunction = function () {
                         PageController.goToPage(PageEnum.PageDeinstalling)
                         InstallController.removeProcessedContainer()
                     }
-                    var noButtonFunction = function () {
-                    }
-
-                    showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, noButtonFunction)
+                    showQuestionDrawer(headerText, descriptionText, yesButtonText, noButtonText, yesButtonFunction, function () {
+                    })
                 }
-
                 MouseArea {
                     anchors.fill: removeButton
                     cursorShape: Qt.PointingHandCursor
@@ -1417,7 +1223,6 @@ PageType {
 
         MouseArea {
             anchors.fill: parent
-            // Consume all clicks
         }
 
         BusyIndicator {
