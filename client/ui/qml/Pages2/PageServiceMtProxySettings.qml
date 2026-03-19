@@ -162,7 +162,8 @@ PageType {
             background: Rectangle {
                 color: AmneziaStyle.color.transparent
                 Rectangle {
-                    width: parent.width; height: 1
+                    width: parent.width
+                    height: 1
                     anchors.bottom: parent.bottom
                     color: AmneziaStyle.color.slateGray
                 }
@@ -215,10 +216,13 @@ PageType {
                 }
 
                 function effectiveSecret() {
-                    if (transportMode === "faketls" && tlsDomain !== "")
+                    if (transportMode === "faketls" && tlsDomain !== "") {
                         return "ee" + secret + domainToHex(tlsDomain)
-                    if (transportMode === "faketls")
+                    }
+                    if (transportMode === "faketls") {
                         return "ee" + secret
+                    }
+
                     return "dd" + secret
                 }
 
@@ -272,7 +276,8 @@ PageType {
                         }
 
                         ImageButtonType {
-                            implicitWidth: 36; implicitHeight: 36
+                            implicitWidth: 36
+                            implicitHeight: 36
                             hoverEnabled: true
                             image: "qrc:/images/controls/qr-code.svg"
                             imageColor: AmneziaStyle.color.paleGray
@@ -291,7 +296,8 @@ PageType {
                         }
 
                         ImageButtonType {
-                            implicitWidth: 36; implicitHeight: 36
+                            implicitWidth: 36
+                            implicitHeight: 36
                             hoverEnabled: true
                             image: "qrc:/images/controls/copy.svg"
                             imageColor: AmneziaStyle.color.paleGray
@@ -319,6 +325,7 @@ PageType {
                     }
 
                     CaptionTextType {
+                        Layout.fillWidth: true
                         text: qsTr("How to do it")
                         color: AmneziaStyle.color.goldenApricot
                         MouseArea {
@@ -359,9 +366,12 @@ PageType {
                             Layout.rightMargin: 8
                             Layout.bottomMargin: 8
                             ColumnLayout {
-                                Layout.fillWidth: true; spacing: 2
+                                Layout.fillWidth: true
+                                spacing: 2
                                 CaptionTextType {
-                                    text: qsTr("Host"); color: AmneziaStyle.color.mutedGray; font.pixelSize: 12
+                                    text: qsTr("Host")
+                                    color: AmneziaStyle.color.mutedGray
+                                    font.pixelSize: 12
                                 }
                                 CaptionTextType {
                                     Layout.fillWidth: true
@@ -371,10 +381,13 @@ PageType {
                                 }
                             }
                             ImageButtonType {
-                                implicitWidth: 36; implicitHeight: 36; hoverEnabled: true
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                hoverEnabled: true
                                 image: "qrc:/images/controls/copy.svg"
                                 imageColor: AmneziaStyle.color.paleGray
-                                onClicked: { GC.copyToClipBoard(effectiveHost()); PageController.showNotificationMessage(qsTr("Copied")) }
+                                onClicked: { GC.copyToClipBoard(effectiveHost())
+                                    PageController.showNotificationMessage(qsTr("Copied")) }
                             }
                         }
 
@@ -390,9 +403,12 @@ PageType {
                             Layout.topMargin: 8
                             Layout.bottomMargin: 8
                             ColumnLayout {
-                                Layout.fillWidth: true; spacing: 2
+                                Layout.fillWidth: true
+                                spacing: 2
                                 CaptionTextType {
-                                    text: qsTr("Port"); color: AmneziaStyle.color.mutedGray; font.pixelSize: 12
+                                    text: qsTr("Port")
+                                    color: AmneziaStyle.color.mutedGray
+                                    font.pixelSize: 12
                                 }
                                 CaptionTextType {
                                     Layout.fillWidth: true
@@ -401,10 +417,13 @@ PageType {
                                 }
                             }
                             ImageButtonType {
-                                implicitWidth: 36; implicitHeight: 36; hoverEnabled: true
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                hoverEnabled: true
                                 image: "qrc:/images/controls/copy.svg"
                                 imageColor: AmneziaStyle.color.paleGray
-                                onClicked: { GC.copyToClipBoard(port); PageController.showNotificationMessage(qsTr("Copied")) }
+                                onClicked: { GC.copyToClipBoard(port)
+                                    PageController.showNotificationMessage(qsTr("Copied")) }
                             }
                         }
 
@@ -420,9 +439,12 @@ PageType {
                             Layout.topMargin: 8
                             Layout.bottomMargin: 8
                             ColumnLayout {
-                                Layout.fillWidth: true; spacing: 2
+                                Layout.fillWidth: true
+                                spacing: 2
                                 CaptionTextType {
-                                    text: qsTr("Secret"); color: AmneziaStyle.color.mutedGray; font.pixelSize: 12
+                                    text: qsTr("Secret")
+                                    color: AmneziaStyle.color.mutedGray
+                                    font.pixelSize: 12
                                 }
                                 CaptionTextType {
                                     Layout.fillWidth: true
@@ -433,10 +455,13 @@ PageType {
                                 }
                             }
                             ImageButtonType {
-                                implicitWidth: 36; implicitHeight: 36; hoverEnabled: true
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                hoverEnabled: true
                                 image: "qrc:/images/controls/copy.svg"
                                 imageColor: AmneziaStyle.color.paleGray
-                                onClicked: { GC.copyToClipBoard(effectiveSecret()); PageController.showNotificationMessage(qsTr("Copied")) }
+                                onClicked: { GC.copyToClipBoard(effectiveSecret())
+                                    PageController.showNotificationMessage(qsTr("Copied")) }
                             }
                         }
                     }
@@ -466,7 +491,9 @@ PageType {
                         })
                     }
                     MouseArea {
-                        anchors.fill: removeButton; cursorShape: Qt.PointingHandCursor; enabled: false
+                        anchors.fill: removeButton
+                        cursorShape: Qt.PointingHandCursor
+                        enabled: false
                     }
                 }
             }
@@ -479,6 +506,7 @@ PageType {
         ListViewType {
             id: settingsListView
             model: MtProxyConfigModel
+            reuseItems: false
 
             delegate: ColumnLayout {
                 width: settingsListView.width
@@ -507,6 +535,60 @@ PageType {
                     }
                 }
 
+                // ── Base secret ───────────────────────────────────────────
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16 * 2
+                    spacing: 4
+
+                    CaptionTextType {
+                        text: qsTr("Base secret")
+                        color: AmneziaStyle.color.mutedGray
+                        font.pixelSize: 12
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        CaptionTextType {
+                            Layout.fillWidth: true
+                            text: secret !== "" ? secret : qsTr("Not generated")
+                            color: secret !== "" ? AmneziaStyle.color.paleGray : AmneziaStyle.color.mutedGray
+                            elide: Text.ElideMiddle
+                            font.pixelSize: 14
+                        }
+
+                        ImageButtonType {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            hoverEnabled: true
+                            image: "qrc:/images/controls/refresh-cw.svg"
+                            imageColor: AmneziaStyle.color.paleGray
+                            visible: ServersModel.isProcessedServerHasWriteAccess()
+                            onClicked: {
+                                showQuestionDrawer(
+                                    qsTr("Generate new secret?"),
+                                    qsTr("All existing connection links will stop working. Users will need new links."),
+                                    qsTr("Generate"),
+                                    qsTr("Cancel"),
+                                        function () {
+                                        isUpdating = true
+                                        MtProxyConfigModel.generateSecret()
+                                        InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
+                                        InstallController.restartContainer(MtProxyConfigModel.getConfig())
+                                    },
+                                        function () {
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // ── Public host / IP ──────────────────────────────────────
                 TextFieldWithHeaderType {
                     id: publicHostTextField
@@ -519,7 +601,9 @@ PageType {
                     textField.text: publicHost
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== publicHost) publicHost = textField.text
+                        if (textField.text !== publicHost) {
+                            publicHost = textField.text
+                        }
                     }
                 }
 
@@ -535,11 +619,14 @@ PageType {
                     textField.text: port
                     textField.maximumLength: 5
                     textField.validator: IntValidator {
-                        bottom: 1; top: 65535
+                        bottom: 1
+                        top: 65535
                     }
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== port) port = textField.text
+                        if (textField.text !== port) {
+                            port = textField.text
+                        }
                     }
                 }
 
@@ -555,10 +642,54 @@ PageType {
                     wrapMode: Text.WordWrap
                 }
 
+                // ── Promoted channel tag ──────────────────────────────────
+                TextFieldWithHeaderType {
+                    id: tagTextField
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    headerText: qsTr("Promoted channel tag (optional)")
+                    textField.placeholderText: qsTr("leave empty if not needed")
+                    textField.text: tag
+                    textField.maximumLength: 64
+                    textField.onEditingFinished: {
+                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                        if (textField.text !== tag) {
+                            tag = textField.text
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    spacing: 4
+
+                    CaptionTextType {
+                        text: qsTr("Get a tag from")
+                        color: AmneziaStyle.color.mutedGray
+                        font.pixelSize: 12
+                    }
+                    CaptionTextType {
+                        text: "@MTProxyBot"
+                        color: AmneziaStyle.color.goldenApricot
+                        font.pixelSize: 12
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Qt.openUrlExternally("https://t.me/MTProxyBot")
+                        }
+                    }
+                }
+
                 // ── Transport mode dropdown ───────────────────────────────
                 DropDownType {
                     id: transportModeDropDown
                     Layout.fillWidth: true
+                    Layout.topMargin: 16 * 2
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
                     Layout.bottomMargin: 16
@@ -597,12 +728,14 @@ PageType {
                     Layout.rightMargin: 16
                     Layout.bottomMargin: 16
                     visible: transportMode === "faketls"
-                    headerText: qsTr("TLS camouflage domain")
+                    headerText: qsTr("FakeTLS domain")
                     textField.placeholderText: "google.com"
                     textField.text: tlsDomain
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== tlsDomain) tlsDomain = textField.text
+                        if (textField.text !== tlsDomain) {
+                            tlsDomain = textField.text
+                        }
                     }
                 }
 
@@ -630,124 +763,7 @@ PageType {
                     }
                 }
 
-                // ── Base secret ───────────────────────────────────────────
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
-                    spacing: 4
-
-                    CaptionTextType {
-                        text: qsTr("Base secret")
-                        color: AmneziaStyle.color.mutedGray
-                        font.pixelSize: 12
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        CaptionTextType {
-                            Layout.fillWidth: true
-                            text: secret !== "" ? secret : qsTr("Not generated")
-                            color: secret !== "" ? AmneziaStyle.color.paleGray : AmneziaStyle.color.mutedGray
-                            elide: Text.ElideMiddle
-                            font.pixelSize: 14
-                        }
-
-                        ImageButtonType {
-                            implicitWidth: 36; implicitHeight: 36; hoverEnabled: true
-                            image: "qrc:/images/controls/refresh-cw.svg"
-                            imageColor: AmneziaStyle.color.paleGray
-                            visible: ServersModel.isProcessedServerHasWriteAccess()
-                            onClicked: {
-                                showQuestionDrawer(
-                                    qsTr("Generate new secret?"),
-                                    qsTr("All existing connection links will stop working. Users will need new links."),
-                                    qsTr("Generate"),
-                                    qsTr("Cancel"),
-                                        function () {
-                                        isUpdating = true
-                                        MtProxyConfigModel.generateSecret()
-                                        InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
-                                        InstallController.restartContainer(MtProxyConfigModel.getConfig())
-                                    },
-                                        function () {
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ── Promoted channel tag ──────────────────────────────────
-                TextFieldWithHeaderType {
-                    id: tagTextField
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
-                    headerText: qsTr("Promoted channel tag (optional)")
-                    textField.placeholderText: qsTr("leave empty if not needed")
-                    textField.text: tag
-                    textField.maximumLength: 64
-                    textField.onEditingFinished: {
-                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== tag) tag = textField.text
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
-                    spacing: 4
-
-                    CaptionTextType {
-                        text: qsTr("Get a tag from")
-                        color: AmneziaStyle.color.mutedGray
-                        font.pixelSize: 12
-                    }
-                    CaptionTextType {
-                        text: "@MTProxyBot"
-                        color: AmneziaStyle.color.goldenApricot
-                        font.pixelSize: 12
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Qt.openUrlExternally("https://t.me/MTProxyBot")
-                        }
-                    }
-                    CaptionTextType {
-                        text: qsTr("to enable promoted channel and statistics.")
-                        color: AmneziaStyle.color.mutedGray
-                        font.pixelSize: 12
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                }
-
-                // ── Warning ───────────────────────────────────────────────
-                CaptionTextType {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.topMargin: 8
-                    Layout.bottomMargin: 24
-                    text: qsTr("If you change the settings, the proxy connection link will change. The old link will stop working.")
-                    color: AmneziaStyle.color.mutedGray
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 12
-                }
-
                 // ── Advanced (collapsible) ────────────────────────────────
-                DividerType {
-                    Layout.fillWidth: true; Layout.topMargin: 8
-                }
-
                 LabelWithButtonType {
                     id: advancedHeader
                     Layout.fillWidth: true
@@ -771,13 +787,18 @@ PageType {
 
                     // Additional secrets
                     CaptionTextType {
-                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
-                        Layout.topMargin: 8; Layout.bottomMargin: 4
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                        Layout.topMargin: 8
+                        Layout.bottomMargin: 4
                         text: qsTr("Additional secrets")
                         color: AmneziaStyle.color.mutedGray
                     }
                     CaptionTextType {
-                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
                         Layout.bottomMargin: 8
                         text: qsTr("Add extra secrets to allow gradual migration without disconnecting existing users.")
                         color: AmneziaStyle.color.charcoalGray
@@ -789,21 +810,30 @@ PageType {
                         model: additionalSecrets
                         delegate: RowLayout {
                             Layout.fillWidth: true
-                            Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 4
+                            Layout.leftMargin: 16
+                            Layout.rightMargin: 16
+                            Layout.bottomMargin: 4
                             spacing: 8
                             CaptionTextType {
-                                Layout.fillWidth: true; text: modelData
+                                Layout.fillWidth: true
+                                text: modelData
                                 color: AmneziaStyle.color.paleGray
-                                elide: Text.ElideMiddle; font.pixelSize: 13
+                                elide: Text.ElideMiddle
+                                font.pixelSize: 13
                             }
                             ImageButtonType {
-                                implicitWidth: 32; implicitHeight: 32; hoverEnabled: true
+                                implicitWidth: 32
+                                implicitHeight: 32
+                                hoverEnabled: true
                                 image: "qrc:/images/controls/copy.svg"
                                 imageColor: AmneziaStyle.color.mutedGray
-                                onClicked: { GC.copyToClipBoard(modelData); PageController.showNotificationMessage(qsTr("Copied")) }
+                                onClicked: { GC.copyToClipBoard(modelData)
+                                    PageController.showNotificationMessage(qsTr("Copied")) }
                             }
                             ImageButtonType {
-                                implicitWidth: 32; implicitHeight: 32; hoverEnabled: true
+                                implicitWidth: 32
+                                implicitHeight: 32
+                                hoverEnabled: true
                                 image: "qrc:/images/controls/trash.svg"
                                 imageColor: AmneziaStyle.color.vibrantRed
                                 onClicked: {
@@ -817,7 +847,11 @@ PageType {
 
                     BasicButtonType {
                         Layout.fillWidth: true
-                        Layout.topMargin: 8; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 16
+                        Layout.topMargin: 8
+
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 16
                         text: qsTr("Add additional secret")
                         clickedFunc: function () {
                             MtProxyConfigModel.addAdditionalSecret()
@@ -828,7 +862,8 @@ PageType {
 
                     // Workers
                     DividerType {
-                        Layout.fillWidth: true; Layout.bottomMargin: 8
+                        Layout.fillWidth: true
+                        Layout.bottomMargin: 8
                     }
 
                     LabelTextType {
@@ -890,17 +925,21 @@ PageType {
                         textField.text: workers
                         textField.maximumLength: 3
                         textField.validator: IntValidator {
-                            bottom: 1; top: 999
+                            bottom: 1
+                            top: 999
                         }
                         textField.onEditingFinished: {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== workers) workers = textField.text
+                            if (textField.text !== workers) {
+                                workers = textField.text
+                            }
                         }
                     }
 
                     // NAT settings
                     DividerType {
-                        Layout.fillWidth: true; Layout.bottomMargin: 8
+                        Layout.fillWidth: true
+                        Layout.bottomMargin: 8
                     }
 
                     SwitcherType {
@@ -919,35 +958,57 @@ PageType {
                     TextFieldWithHeaderType {
                         id: natInternalIpTextField
                         Layout.fillWidth: true
-                        Layout.topMargin: 8
-                        Layout.rightMargin: 16
                         Layout.leftMargin: 16
-                        Layout.bottomMargin: 8
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 16
                         visible: natEnabled
                         headerText: qsTr("Internal IP")
                         textField.placeholderText: "172.17.0.2"
                         textField.text: natInternalIp
                         textField.onEditingFinished: {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== natInternalIp) natInternalIp = textField.text
+                            if (textField.text !== natInternalIp) {
+                                natInternalIp = textField.text
+                            }
                         }
                     }
 
                     TextFieldWithHeaderType {
                         id: natExternalIpTextField
                         Layout.fillWidth: true
-                        Layout.rightMargin: 16
                         Layout.leftMargin: 16
-                        Layout.bottomMargin: 24
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 16
                         visible: natEnabled
                         headerText: qsTr("External IP")
                         textField.placeholderText: "1.2.3.4"
                         textField.text: natExternalIp
                         textField.onEditingFinished: {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                            if (textField.text !== natExternalIp) natExternalIp = textField.text
+                            if (textField.text !== natExternalIp) {
+                                natExternalIp = textField.text
+                            }
                         }
                     }
+                }
+
+                // ── Line ──────────────────────────────────────────────────
+                DividerType {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                }
+
+                // ── Warning ───────────────────────────────────────────────
+                CaptionTextType {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.topMargin: 16 * 2
+                    Layout.bottomMargin: 24
+                    text: qsTr("If you change the settings, the proxy connection link will change. The old link will stop working.")
+                    color: AmneziaStyle.color.mutedGray
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
                 }
 
                 // ── Save ──────────────────────────────────────────────────
@@ -1014,7 +1075,8 @@ PageType {
                     headerText: qsTr("Telegram connection link")
                 }
                 ImageButtonType {
-                    implicitWidth: 36; implicitHeight: 36
+                    implicitWidth: 36
+ implicitHeight: 36
                     hoverEnabled: true
                     image: "qrc:/images/controls/close.svg"
                     imageColor: AmneziaStyle.color.paleGray
@@ -1049,7 +1111,8 @@ PageType {
             Rectangle {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 24
-                width: 220; height: 220
+                width: 220
+ height: 220
                 color: "white"
                 radius: 8
                 Image {
@@ -1102,7 +1165,8 @@ PageType {
             anchors.right: parent.right
             anchors.topMargin: 20 + SettingsController.safeAreaTopMargin
             anchors.rightMargin: 16
-            implicitWidth: 40; implicitHeight: 40
+            implicitWidth: 40
+            implicitHeight: 40
             hoverEnabled: true
             image: "qrc:/images/controls/close.svg"
             imageColor: AmneziaStyle.color.paleGray
@@ -1181,7 +1245,8 @@ PageType {
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 24
-                    width: 220; height: 220
+                    width: 220
+                    height: 220
                     color: "white"
                     radius: 8
 
@@ -1226,7 +1291,8 @@ PageType {
         BusyIndicator {
             anchors.centerIn: parent
             running: isCheckingStatus || isUpdating
-            width: 48; height: 48
+            width: 48
+            height: 48
         }
     }
 }
