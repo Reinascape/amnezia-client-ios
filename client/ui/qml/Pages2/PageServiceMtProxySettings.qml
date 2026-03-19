@@ -77,6 +77,11 @@ PageType {
             }
         }
 
+        function onRestartContainerFinished(message) {
+            isUpdating = false
+            PageController.showNotificationMessage(message)
+        }
+
         function onInstallationErrorOccurred() {
             isUpdating = false
             containerStatus = previousContainerStatus
@@ -502,6 +507,129 @@ PageType {
                     }
                 }
 
+                // ── Public host / IP ──────────────────────────────────────
+                TextFieldWithHeaderType {
+                    id: publicHostTextField
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    headerText: qsTr("Public host / IP")
+                    textField.placeholderText: ServersModel.getProcessedServerData("hostName")
+                    textField.text: publicHost
+                    textField.onEditingFinished: {
+                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                        if (textField.text !== publicHost) publicHost = textField.text
+                    }
+                }
+
+                // ── Server port ───────────────────────────────────────────
+                TextFieldWithHeaderType {
+                    id: portTextField
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    headerText: qsTr("Server port")
+                    textField.placeholderText: "443"
+                    textField.text: port
+                    textField.maximumLength: 5
+                    textField.validator: IntValidator {
+                        bottom: 1; top: 65535
+                    }
+                    textField.onEditingFinished: {
+                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                        if (textField.text !== port) port = textField.text
+                    }
+                }
+
+                CaptionTextType {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 12
+                    visible: transportMode === "faketls" && portTextField.textField.text !== "443" && portTextField.textField.text !== ""
+                    text: qsTr("FakeTLS may not work on ports other than 443")
+                    color: AmneziaStyle.color.goldenApricot
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                }
+
+                // ── Transport mode dropdown ───────────────────────────────
+                DropDownType {
+                    id: transportModeDropDown
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+
+                    drawerParent: root
+                    drawerHeight: 0.35
+                    descriptionText: qsTr("Transport mode")
+                    text: transportMode === "faketls" ? qsTr("FakeTLS") : qsTr("Standard MTProto")
+
+                    listView: Component {
+                        ListViewType {
+                            model: [qsTr("Standard MTProto"), qsTr("FakeTLS")]
+                            delegate: LabelWithButtonType {
+                                Layout.fillWidth: true
+                                text: modelData
+                                rightImageSource: {
+                                    var isCurrent = (index === 0 && transportMode === "standard") ||
+                                        (index === 1 && transportMode === "faketls")
+                                    return isCurrent ? "qrc:/images/controls/check.svg" : ""
+                                }
+                                rightImageColor: AmneziaStyle.color.goldenApricot
+                                clickedFunction: function () {
+                                    transportMode = (index === 0) ? "standard" : "faketls"
+                                    transportModeDropDown.closeTriggered()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── FakeTLS domain ────────────────────────────────────────
+                TextFieldWithHeaderType {
+                    id: tlsDomainTextField
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    visible: transportMode === "faketls"
+                    headerText: qsTr("TLS camouflage domain")
+                    textField.placeholderText: "google.com"
+                    textField.text: tlsDomain
+                    textField.onEditingFinished: {
+                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                        if (textField.text !== tlsDomain) tlsDomain = textField.text
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    spacing: 4
+                    visible: transportMode === "faketls"
+
+                    CaptionTextType {
+                        Layout.fillWidth: true
+                        text: qsTr("The domain is encoded into the FakeTLS client secret (ee + base_secret + hex(domain)). It must support HTTPS / TLS 1.3.")
+                        color: AmneziaStyle.color.mutedGray
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 12
+                    }
+                    CaptionTextType {
+                        Layout.fillWidth: true
+                        text: qsTr("\u26a0 Changing the domain will invalidate all previously issued FakeTLS connection links.")
+                        color: AmneziaStyle.color.goldenApricot
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 12
+                    }
+                }
+
                 // ── Base secret ───────────────────────────────────────────
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -553,46 +681,14 @@ PageType {
                     }
                 }
 
-                // ── Server port ───────────────────────────────────────────
-                TextFieldWithHeaderType {
-                    id: portTextField
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 16
-                    Layout.leftMargin: 16
-                    Layout.bottomMargin: 4
-                    headerText: qsTr("Server port")
-                    textField.placeholderText: "443"
-                    textField.text: port
-                    textField.maximumLength: 5
-                    textField.validator: IntValidator {
-                        bottom: 1; top: 65535
-                    }
-                    textField.onEditingFinished: {
-                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== port) port = textField.text
-                    }
-                }
-
-                CaptionTextType {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 12
-                    visible: transportMode === "faketls" && portTextField.textField.text !== "443" && portTextField.textField.text !== ""
-                    text: qsTr("FakeTLS may not work on ports other than 443")
-                    color: AmneziaStyle.color.goldenApricot
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                }
-
                 // ── Promoted channel tag ──────────────────────────────────
                 TextFieldWithHeaderType {
                     id: tagTextField
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    Layout.bottomMargin: 4
-                    headerText: qsTr("Promoted channel (tag)")
+                    Layout.bottomMargin: 16
+                    headerText: qsTr("Promoted channel tag (optional)")
                     textField.placeholderText: qsTr("leave empty if not needed")
                     textField.text: tag
                     textField.maximumLength: 64
@@ -610,12 +706,12 @@ PageType {
                     spacing: 4
 
                     CaptionTextType {
-                        text: qsTr("Hex tag from")
+                        text: qsTr("Get a tag from")
                         color: AmneziaStyle.color.mutedGray
                         font.pixelSize: 12
                     }
                     CaptionTextType {
-                        text: "@MTProxybot"
+                        text: "@MTProxyBot"
                         color: AmneziaStyle.color.goldenApricot
                         font.pixelSize: 12
                         MouseArea {
@@ -624,120 +720,13 @@ PageType {
                             onClicked: Qt.openUrlExternally("https://t.me/MTProxyBot")
                         }
                     }
+                    CaptionTextType {
+                        text: qsTr("to enable promoted channel and statistics.")
+                        color: AmneziaStyle.color.mutedGray
+                        font.pixelSize: 12
+                    }
                     Item {
                         Layout.fillWidth: true
-                    }
-                }
-
-                // ── Transport mode dropdown ───────────────────────────────
-                DropDownType {
-                    id: transportModeDropDown
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
-
-                    drawerParent: root
-                    drawerHeight: 0.35
-                    descriptionText: qsTr("Transport mode")
-                    text: transportMode === "faketls" ? qsTr("FakeTLS") : qsTr("Standard MTProto")
-
-                    listView: Component {
-                        ListViewType {
-                            model: [qsTr("Standard MTProto"), qsTr("FakeTLS")]
-                            delegate: LabelWithButtonType {
-                                Layout.fillWidth: true
-                                text: modelData
-                                rightImageSource: {
-                                    var isCurrent = (index === 0 && transportMode === "standard") ||
-                                        (index === 1 && transportMode === "faketls")
-                                    return isCurrent ? "qrc:/images/controls/check.svg" : ""
-                                }
-                                rightImageColor: AmneziaStyle.color.goldenApricot
-                                clickedFunction: function () {
-                                    transportMode = (index === 0) ? "standard" : "faketls"
-                                    transportModeDropDown.closeTriggered()
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── FakeTLS domain ────────────────────────────────────────
-                TextFieldWithHeaderType {
-                    id: tlsDomainTextField
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 16
-                    Layout.leftMargin: 16
-                    Layout.bottomMargin: 4
-                    visible: transportMode === "faketls"
-                    headerText: qsTr("FakeTLS domain")
-                    textField.placeholderText: "google.com"
-                    textField.text: tlsDomain
-                    textField.onEditingFinished: {
-                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== tlsDomain) tlsDomain = textField.text
-                    }
-                }
-
-                CaptionTextType {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
-                    visible: transportMode === "faketls"
-                    text: qsTr("\u26a0 Changing the domain will invalidate all previously issued FakeTLS connection links.")
-                    color: AmneziaStyle.color.goldenApricot
-                    wrapMode: Text.WordWrap
-                    font.pixelSize: 12
-                }
-
-                // ── Server behind NAT / Docker ────────────────────────────
-                SwitcherType {
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 16
-                    Layout.leftMargin: 16
-                    Layout.bottomMargin: 4
-                    text: qsTr("Server behind NAT / Docker")
-                    descriptionText: qsTr("Enable if your server is not directly accessible from the internet, e.g. Docker or private network")
-                    checked: natEnabled
-                    onToggled: function () {
-                        if (checked !== natEnabled) natEnabled = checked
-                    }
-                }
-
-                // ── Internal IP (NAT) ────────────────────────────────────
-                TextFieldWithHeaderType {
-                    id: natInternalIpTextField
-                    Layout.fillWidth: true
-                    Layout.topMargin: 8
-                    Layout.rightMargin: 16
-                    Layout.leftMargin: 16
-                    Layout.bottomMargin: 8
-                    visible: natEnabled
-                    headerText: qsTr("Internal IP")
-                    textField.placeholderText: "172.17.0.2"
-                    textField.text: natInternalIp
-                    textField.onEditingFinished: {
-                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== natInternalIp) natInternalIp = textField.text
-                    }
-                }
-
-                // ── External IP (NAT) ─────────────────────────────────────
-                TextFieldWithHeaderType {
-                    id: natExternalIpTextField
-                    Layout.fillWidth: true
-                    Layout.rightMargin: 16
-                    Layout.leftMargin: 16
-                    Layout.bottomMargin: 16
-                    visible: natEnabled
-                    headerText: qsTr("External IP")
-                    textField.placeholderText: "1.2.3.4"
-                    textField.text: natExternalIp
-                    textField.onEditingFinished: {
-                        textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== natExternalIp) natExternalIp = textField.text
                     }
                 }
 
@@ -754,10 +743,218 @@ PageType {
                     font.pixelSize: 12
                 }
 
+                // ── Advanced (collapsible) ────────────────────────────────
+                DividerType {
+                    Layout.fillWidth: true; Layout.topMargin: 8
+                }
+
+                LabelWithButtonType {
+                    id: advancedHeader
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 0
+                    Layout.rightMargin: 16
+                    property bool expanded: false
+                    text: qsTr("Advanced")
+                    rightImageSource: expanded
+                        ? "qrc:/images/controls/chevron-up.svg"
+                        : "qrc:/images/controls/chevron-down.svg"
+                    rightImageColor: AmneziaStyle.color.mutedGray
+                    clickedFunction: function () {
+                        expanded = !expanded
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+                    visible: advancedHeader.expanded
+
+                    // Additional secrets
+                    CaptionTextType {
+                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
+                        Layout.topMargin: 8; Layout.bottomMargin: 4
+                        text: qsTr("Additional secrets")
+                        color: AmneziaStyle.color.mutedGray
+                    }
+                    CaptionTextType {
+                        Layout.fillWidth: true; Layout.leftMargin: 16; Layout.rightMargin: 16
+                        Layout.bottomMargin: 8
+                        text: qsTr("Add extra secrets to allow gradual migration without disconnecting existing users.")
+                        color: AmneziaStyle.color.charcoalGray
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 12
+                    }
+
+                    Repeater {
+                        model: additionalSecrets
+                        delegate: RowLayout {
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 4
+                            spacing: 8
+                            CaptionTextType {
+                                Layout.fillWidth: true; text: modelData
+                                color: AmneziaStyle.color.paleGray
+                                elide: Text.ElideMiddle; font.pixelSize: 13
+                            }
+                            ImageButtonType {
+                                implicitWidth: 32; implicitHeight: 32; hoverEnabled: true
+                                image: "qrc:/images/controls/copy.svg"
+                                imageColor: AmneziaStyle.color.mutedGray
+                                onClicked: { GC.copyToClipBoard(modelData); PageController.showNotificationMessage(qsTr("Copied")) }
+                            }
+                            ImageButtonType {
+                                implicitWidth: 32; implicitHeight: 32; hoverEnabled: true
+                                image: "qrc:/images/controls/trash.svg"
+                                imageColor: AmneziaStyle.color.vibrantRed
+                                onClicked: {
+                                    MtProxyConfigModel.removeAdditionalSecret(index)
+                                    InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
+                                    InstallController.restartContainer(MtProxyConfigModel.getConfig())
+                                }
+                            }
+                        }
+                    }
+
+                    BasicButtonType {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 8; Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.bottomMargin: 16
+                        text: qsTr("Add additional secret")
+                        clickedFunc: function () {
+                            MtProxyConfigModel.addAdditionalSecret()
+                            InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
+                            InstallController.restartContainer(MtProxyConfigModel.getConfig())
+                        }
+                    }
+
+                    // Workers
+                    DividerType {
+                        Layout.fillWidth: true; Layout.bottomMargin: 8
+                    }
+
+                    LabelTextType {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.bottomMargin: 4
+                        text: qsTr("Worker mode")
+                    }
+
+                    ButtonGroup {
+                        id: workerModeGroup
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 4
+                        spacing: 0
+                        visible: transportMode !== "faketls"
+
+                        HorizontalRadioButton {
+                            Layout.fillWidth: true
+                            text: qsTr("Auto")
+                            ButtonGroup.group: workerModeGroup
+                            checked: workersMode === "auto"
+                            onClicked: workersMode = "auto"
+                        }
+                        HorizontalRadioButton {
+                            Layout.fillWidth: true
+                            text: qsTr("Manual")
+                            ButtonGroup.group: workerModeGroup
+                            checked: workersMode === "manual"
+                            onClicked: workersMode = "manual"
+                        }
+                    }
+
+                    CaptionTextType {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 8
+                        visible: transportMode === "faketls"
+                        text: qsTr("Workers are set to 0 automatically for FakeTLS mode.")
+                        color: AmneziaStyle.color.mutedGray
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+
+                    TextFieldWithHeaderType {
+                        id: workersTextField
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 16
+                        Layout.rightMargin: 16
+                        Layout.bottomMargin: 16
+                        visible: workersMode === "manual" && transportMode !== "faketls"
+                        headerText: qsTr("Workers count")
+                        textField.placeholderText: "2"
+                        textField.text: workers
+                        textField.maximumLength: 3
+                        textField.validator: IntValidator {
+                            bottom: 1; top: 999
+                        }
+                        textField.onEditingFinished: {
+                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                            if (textField.text !== workers) workers = textField.text
+                        }
+                    }
+
+                    // NAT settings
+                    DividerType {
+                        Layout.fillWidth: true; Layout.bottomMargin: 8
+                    }
+
+                    SwitcherType {
+                        Layout.fillWidth: true
+                        Layout.rightMargin: 16
+                        Layout.leftMargin: 16
+                        Layout.bottomMargin: 4
+                        text: qsTr("Server is behind NAT / Docker bridge")
+                        descriptionText: qsTr("Enable if your server is not directly accessible from the internet, e.g. Docker or private network")
+                        checked: natEnabled
+                        onToggled: function () {
+                            if (checked !== natEnabled) natEnabled = checked
+                        }
+                    }
+
+                    TextFieldWithHeaderType {
+                        id: natInternalIpTextField
+                        Layout.fillWidth: true
+                        Layout.topMargin: 8
+                        Layout.rightMargin: 16
+                        Layout.leftMargin: 16
+                        Layout.bottomMargin: 8
+                        visible: natEnabled
+                        headerText: qsTr("Internal IP")
+                        textField.placeholderText: "172.17.0.2"
+                        textField.text: natInternalIp
+                        textField.onEditingFinished: {
+                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                            if (textField.text !== natInternalIp) natInternalIp = textField.text
+                        }
+                    }
+
+                    TextFieldWithHeaderType {
+                        id: natExternalIpTextField
+                        Layout.fillWidth: true
+                        Layout.rightMargin: 16
+                        Layout.leftMargin: 16
+                        Layout.bottomMargin: 24
+                        visible: natEnabled
+                        headerText: qsTr("External IP")
+                        textField.placeholderText: "1.2.3.4"
+                        textField.text: natExternalIp
+                        textField.onEditingFinished: {
+                            textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                            if (textField.text !== natExternalIp) natExternalIp = textField.text
+                        }
+                    }
+                }
+
                 // ── Save ──────────────────────────────────────────────────
                 BasicButtonType {
                     Layout.fillWidth: true
-                    Layout.bottomMargin: 8
+                    Layout.topMargin: 16
+                    Layout.bottomMargin: 32
                     Layout.rightMargin: 16
                     Layout.leftMargin: 16
                     visible: ServersModel.isProcessedServerHasWriteAccess()
