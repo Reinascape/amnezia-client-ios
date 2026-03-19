@@ -810,6 +810,87 @@ void InstallController::removeProcessedContainer()
     emit installationErrorOccurred(errorCode);
 }
 
+void InstallController::setContainerEnabled(DockerContainer container, bool enabled)
+{
+    int serverIndex = m_serversModel->getProcessedServerIndex();
+    ServerCredentials serverCredentials =
+            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+
+    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+    connect(serverController.get(), &ServerController::serverIsBusy, this, &InstallController::serverIsBusy);
+    connect(this, &InstallController::cancelInstallation, serverController.get(), &ServerController::cancelInstallation);
+
+    emit serverIsBusy(true);
+
+    QFuture<ErrorCode> future = QtConcurrent::run([serverController, serverCredentials, container, enabled]() mutable {
+        return enabled
+            ? serverController->startContainer(serverCredentials, container)
+            : serverController->stopContainer(serverCredentials, container);
+    });
+
+    auto *watcher = new QFutureWatcher<ErrorCode>(this);
+    connect(watcher, &QFutureWatcher<ErrorCode>::finished, this, [this, watcher, enabled]() {
+        emit serverIsBusy(false);
+        ErrorCode errorCode = watcher->result();
+        if (errorCode == ErrorCode::NoError) {
+            emit setContainerEnabledFinished(enabled);
+        } else {
+            emit installationErrorOccurred(errorCode);
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
+void InstallController::refreshContainerStatus(DockerContainer container)
+{
+    int serverIndex = m_serversModel->getProcessedServerIndex();
+    ServerCredentials serverCredentials =
+            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+
+    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+
+    QFuture<int> future = QtConcurrent::run([serverController, serverCredentials, container]() mutable {
+        ServerController::ContainerStatus status = serverController->getContainerStatus(serverCredentials, container);
+        return static_cast<int>(status);
+    });
+
+    auto *watcher = new QFutureWatcher<int>(this);
+    connect(watcher, &QFutureWatcher<int>::finished, this, [this, watcher]() {
+        emit containerStatusRefreshed(watcher->result());
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
+void InstallController::refreshMtProxyDiagnostics(int port)
+{
+    int serverIndex = m_serversModel->getProcessedServerIndex();
+    ServerCredentials serverCredentials =
+            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+
+    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+
+    QFuture<ServerController::MtProxyDiagnostics> future =
+            QtConcurrent::run([serverController, serverCredentials, port]() mutable {
+                return serverController->getMtProxyDiagnostics(serverCredentials, port);
+            });
+
+    auto *watcher = new QFutureWatcher<ServerController::MtProxyDiagnostics>(this);
+    connect(watcher, &QFutureWatcher<ServerController::MtProxyDiagnostics>::finished, this, [this, watcher]() {
+        auto diag = watcher->result();
+        emit mtProxyDiagnosticsRefreshed(
+            diag.portReachable,
+            diag.telegramReachable,
+            diag.clientsConnected,
+            diag.lastConfigRefresh,
+            diag.statsEndpoint
+        );
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
 void InstallController::removeApiConfig(const int serverIndex)
 {
     m_serversModel->removeApiConfig(serverIndex);

@@ -2,9 +2,12 @@
 #define MTPROXYCONFIGMODEL_H
 
 #include <QAbstractListModel>
+#include <QJsonArray>
 #include <QJsonObject>
+#include <QRandomGenerator>
 
 #include "containers/containers_defs.h"
+#include "core/qrCodeUtils.h"
 
 class MtProxyConfigModel : public QAbstractListModel
 {
@@ -16,7 +19,17 @@ public:
         SecretRole,
         TagRole,
         TgLinkRole,
-        TmeLinkRole
+        TmeLinkRole,
+        IsEnabledRole,
+        PublicHostRole,
+        TransportModeRole,
+        TlsDomainRole,
+        AdditionalSecretsRole,
+        WorkersModeRole,
+        WorkersRole,
+        NatEnabledRole,
+        NatInternalIpRole,
+        NatExternalIpRole
     };
 
     explicit MtProxyConfigModel(QObject *parent = nullptr);
@@ -29,6 +42,12 @@ public:
 public slots:
     void updateModel(const QJsonObject &config);
     QJsonObject getConfig();
+
+    Q_INVOKABLE void generateSecret();
+    Q_INVOKABLE void addAdditionalSecret();
+    Q_INVOKABLE void removeAdditionalSecret(int idx);
+    Q_INVOKABLE QString generateQrCode(const QString &text);
+    Q_INVOKABLE void setEnabled(bool enabled);
 
 protected:
     QHash<int, QByteArray> roleNames() const override;

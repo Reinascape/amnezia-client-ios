@@ -32,6 +32,27 @@ public:
     ErrorCode startupContainerWorker(const ServerCredentials &credentials, DockerContainer container,
                                      const QJsonObject &config = QJsonObject());
 
+    ErrorCode startContainer(const ServerCredentials &credentials, DockerContainer container);
+    ErrorCode stopContainer(const ServerCredentials &credentials, DockerContainer container);
+
+    enum class ContainerStatus {
+        NotDeployed,
+        Running,
+        Stopped,
+        Error
+    };
+    ContainerStatus getContainerStatus(const ServerCredentials &credentials, DockerContainer container);
+
+    struct MtProxyDiagnostics
+    {
+        bool portReachable = false;
+        bool telegramReachable = false;
+        int clientsConnected = -1;
+        QString lastConfigRefresh;
+        QString statsEndpoint;
+        bool available = false;
+    };
+    MtProxyDiagnostics getMtProxyDiagnostics(const ServerCredentials &credentials, int port);
     ErrorCode uploadTextFileToContainer(DockerContainer container, const ServerCredentials &credentials, const QString &file,
                                         const QString &path,
                                         libssh::ScpOverwriteMode overwriteMode = libssh::ScpOverwriteMode::ScpOverwriteExisting);
@@ -83,5 +104,7 @@ private:
 signals:
     void serverIsBusy(const bool isBusy);
 };
+
+Q_DECLARE_METATYPE(ServerController::MtProxyDiagnostics)
 
 #endif // SERVERCONTROLLER_H

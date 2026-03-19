@@ -20,17 +20,36 @@ if [ -n "$MTPROXY_TAG" ]; then
     TAG_ARG="-P $MTPROXY_TAG"
 fi
 
-WORKERS=2
+# Build domain argument for FakeTLS mode
+DOMAIN_ARG=""
+if [ "${MTPROXY_TRANSPORT_MODE}" = "faketls" ] && [ -n "$MTPROXY_TLS_DOMAIN" ]; then
+    DOMAIN_ARG="--domain $MTPROXY_TLS_DOMAIN"
+fi
+
+WORKERS=${MTPROXY_WORKERS:-2}
 STATS_PORT=2398
 
-# Detect internal and external IPs for NAT
-INTERNAL_IP=$(hostname -i 2>/dev/null | awk '{print $1}')
-EXTERNAL_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null)
-[ -z "$EXTERNAL_IP" ] && EXTERNAL_IP=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null)
-
 NAT_ARG=""
-if [ -n "$INTERNAL_IP" ] && [ -n "$EXTERNAL_IP" ] && [ "$INTERNAL_IP" != "$EXTERNAL_IP" ]; then
-    NAT_ARG="--nat-info ${INTERNAL_IP}:${EXTERNAL_IP}"
+if [ "${MTPROXY_NAT_ENABLED}" = "1" ] && [ -n "$MTPROXY_NAT_INTERNAL_IP" ] && [ -n "$MTPROXY_NAT_EXTERNAL_IP" ]; then
+    # Manual NAT override
+    NAT_ARG="--nat-info ${MTPROXY_NAT_INTERNAL_IP}:${MTPROXY_NAT_EXTERNAL_IP}"
+else
+    # Auto-detect internal and external IPs
+    INTERNAL_IP=$(hostname -i 2>/dev/null | awk '{print $1}')
+    EXTERNAL_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null)
+    [ -z "$EXTERNAL_IP" ] && EXTERNAL_IP=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null)
+
+    if [ -n "$INTERNAL_IP" ] && [ -n "$EXTERNAL_IP" ] && [ "$INTERNAL_IP" != "$EXTERNAL_IP" ]; then
+        NAT_ARG="--nat-info ${INTERNAL_IP}:${EXTERNAL_IP}"
+    fi
+fi
+
+# Build additional secrets arguments
+ADDITIONAL_SECRETS_ARG=""
+if [ -n "$MTPROXY_ADDITIONAL_SECRETS" ]; then
+    for S in $(echo "$MTPROXY_ADDITIONAL_SECRETS" | tr ',' ' '); do
+        ADDITIONAL_SECRETS_ARG="$ADDITIONAL_SECRETS_ARG -S $S"
+    done
 fi
 
 # Start proxy (foreground)
@@ -39,10 +58,12 @@ exec mtproto-proxy \
     -p ${STATS_PORT} \
     -H 443 \
     -S ${SECRET} \
+    ${ADDITIONAL_SECRETS_ARG} \
     --aes-pwd /data/proxy-secret \
     -M ${WORKERS} \
     -C 60000 \
     --allow-skip-dh \
     ${NAT_ARG} \
     ${TAG_ARG} \
+    ${DOMAIN_ARG} \
     /data/proxy-multi.conf

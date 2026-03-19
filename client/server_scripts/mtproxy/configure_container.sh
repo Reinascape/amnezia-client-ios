@@ -31,11 +31,34 @@ IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null)
 [ -z "$IP" ] && IP=$(curl -s --max-time 5 https://icanhazip.com 2>/dev/null)
 
 PORT=$MTPROXY_PORT
-FAKETLS_SECRET="dd${SECRET}"
+
+# Determine transport mode and build client secrets
+# Standard (no prefix) — plain MTProto
+# Standard padded (dd prefix) — random padding, recommended
+# FakeTLS (ee prefix) — TLS camouflage, requires domain
+TRANSPORT_MODE="${MTPROXY_TRANSPORT_MODE:-standard}"
+
+STANDARD_SECRET="${SECRET}"
+PADDED_SECRET="dd${SECRET}"
+
+if [ "$TRANSPORT_MODE" = "faketls" ] && [ -n "$MTPROXY_TLS_DOMAIN" ]; then
+    # FakeTLS secret: ee + base_secret + hex(domain)
+    DOMAIN_HEX=$(echo -n "$MTPROXY_TLS_DOMAIN" | xxd -p | tr -d '\n')
+    FAKETLS_SECRET="ee${SECRET}${DOMAIN_HEX}"
+else
+    FAKETLS_SECRET=""
+fi
+
+# Active link secret depends on transport mode
+if [ "$TRANSPORT_MODE" = "faketls" ] && [ -n "$FAKETLS_SECRET" ]; then
+    LINK_SECRET="$FAKETLS_SECRET"
+else
+    LINK_SECRET="$PADDED_SECRET"
+fi
 
 # Output stable markers — parsed by updateContainerConfigAfterInstallation()
 echo "[*] MTProxy configuration"
 echo "[*] Secret:    ${SECRET}"
 echo "[*] FakeTLS:   ${FAKETLS_SECRET}"
-echo "[*] tg:// link:   tg://proxy?server=${IP}&port=${PORT}&secret=${FAKETLS_SECRET}"
-echo "[*] t.me link:    https://t.me/proxy?server=${IP}&port=${PORT}&secret=${FAKETLS_SECRET}"
+echo "[*] tg:// link:   tg://proxy?server=${IP}&port=${PORT}&secret=${LINK_SECRET}"
+echo "[*] t.me link:    https://t.me/proxy?server=${IP}&port=${PORT}&secret=${LINK_SECRET}"

@@ -6,6 +6,7 @@
 
 #include "containers/containers_defs.h"
 #include "core/defs.h"
+#include "core/controllers/serverController.h"
 #include "ui/models/clientManagementModel.h"
 #include "ui/models/containers_model.h"
 #include "ui/models/protocols_model.h"
@@ -34,6 +35,10 @@ public slots:
     void rebootProcessedServer();
     void removeAllContainers();
     void removeProcessedContainer();
+
+    void setContainerEnabled(DockerContainer container, bool enabled);
+    void refreshContainerStatus(DockerContainer container);
+    void refreshMtProxyDiagnostics(int port);
 
     void removeApiConfig(const int serverIndex);
 
@@ -65,6 +70,12 @@ signals:
     void removeProcessedServerFinished(const QString &finishedMessage);
     void removeAllContainersFinished(const QString &finishedMessage);
     void removeProcessedContainerFinished(const QString &finishedMessage);
+
+    void setContainerEnabledFinished(bool enabled);
+    void containerStatusRefreshed(int status);
+    void mtProxyDiagnosticsRefreshed(bool portReachable, bool telegramReachable,
+                                     int clientsConnected, const QString &lastConfigRefresh,
+                                     const QString &statsEndpoint);
 
     void installationErrorOccurred(ErrorCode errorCode);
     void wrongInstallationUser(const QString &message);
