@@ -706,38 +706,38 @@ PageType {
                     }
                 }
 
-                // ── Public IP (NAT) ───────────────────────────────────────
+                // ── Internal IP (NAT) ────────────────────────────────────
                 TextFieldWithHeaderType {
-                    id: natExternalIpTextField
+                    id: natInternalIpTextField
                     Layout.fillWidth: true
                     Layout.topMargin: 8
                     Layout.rightMargin: 16
                     Layout.leftMargin: 16
                     Layout.bottomMargin: 8
                     visible: natEnabled
-                    headerText: qsTr("Public IP")
-                    textField.placeholderText: "1.2.3.4"
-                    textField.text: natExternalIp
+                    headerText: qsTr("Internal IP")
+                    textField.placeholderText: "172.17.0.2"
+                    textField.text: natInternalIp
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== natExternalIp) natExternalIp = textField.text
+                        if (textField.text !== natInternalIp) natInternalIp = textField.text
                     }
                 }
 
-                // ── Public port (NAT) ─────────────────────────────────────
+                // ── External IP (NAT) ─────────────────────────────────────
                 TextFieldWithHeaderType {
-                    id: natInternalIpTextField
+                    id: natExternalIpTextField
                     Layout.fillWidth: true
                     Layout.rightMargin: 16
                     Layout.leftMargin: 16
                     Layout.bottomMargin: 16
                     visible: natEnabled
-                    headerText: qsTr("Public port")
-                    textField.placeholderText: "443"
-                    textField.text: natInternalIp
+                    headerText: qsTr("External IP")
+                    textField.placeholderText: "1.2.3.4"
+                    textField.text: natExternalIp
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== natInternalIp) natInternalIp = textField.text
+                        if (textField.text !== natExternalIp) natExternalIp = textField.text
                     }
                 }
 
