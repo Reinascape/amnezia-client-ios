@@ -215,15 +215,25 @@ PageType {
                     return hex
                 }
 
-                function effectiveSecret() {
-                    if (transportMode === "faketls" && tlsDomain !== "") {
-                        return "ee" + secret + domainToHex(tlsDomain)
+                function secretForMode(mode) {
+                    if (mode === "faketls") {
+                        return tlsDomain !== "" ? "ee" + secret + domainToHex(tlsDomain) : "ee" + secret
+                    } else if (mode === "padded") {
+                        return "dd" + secret
                     }
-                    if (transportMode === "faketls") {
-                        return "ee" + secret
-                    }
+                    return secret
+                }
 
-                    return "dd" + secret
+                property int secretTabIndex: transportMode === "faketls" ? 2 : 0
+
+                function activeSecret() {
+                    if (secretTabIndex === 0) return secretForMode("standard")
+                    if (secretTabIndex === 1) return secretForMode("padded")
+                    return secretForMode("faketls")
+                }
+
+                function effectiveSecret() {
+                    return activeSecret()
                 }
 
                 function effectiveHost() {
@@ -231,7 +241,11 @@ PageType {
                 }
 
                 function tmeLink() {
-                    return "https://t.me/proxy?server=" + effectiveHost() + "&port=" + port + "&secret=" + effectiveSecret()
+                    return "https://t.me/proxy?server=" + effectiveHost() + "&port=" + port + "&secret=" + activeSecret()
+                }
+
+                function tgLink() {
+                    return "tg://proxy?server=" + effectiveHost() + "&port=" + port + "&secret=" + activeSecret()
                 }
 
                 // ── Telegram link ─────────────────────────────────────────
@@ -304,6 +318,64 @@ PageType {
                             visible: secret !== ""
                             onClicked: {
                                 GC.copyToClipBoard(tmeLink())
+                                PageController.showNotificationMessage(qsTr("Copied"))
+                            }
+                        }
+                    }
+                }
+
+                // tg:// link
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 16
+                    implicitHeight: tgLinkRow.implicitHeight + 16
+                    color: AmneziaStyle.color.onyxBlack
+                    radius: 8
+                    border.color: AmneziaStyle.color.slateGray
+                    border.width: 1
+                    visible: secret !== ""
+
+                    RowLayout {
+                        id: tgLinkRow
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 8
+                        spacing: 4
+
+                        CaptionTextType {
+                            Layout.fillWidth: true
+                            text: tgLink()
+                            color: AmneziaStyle.color.goldenApricot
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            font.pixelSize: 13
+                        }
+
+                        ImageButtonType {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            hoverEnabled: true
+                            image: "qrc:/images/controls/qr-code.svg"
+                            imageColor: AmneziaStyle.color.paleGray
+                            onClicked: {
+                                qrOverlay.qrSource = MtProxyConfigModel.generateQrCode(tgLink())
+                                qrOverlay.linkUrl = tgLink()
+                                qrOverlay.visible = true
+                            }
+                        }
+
+                        ImageButtonType {
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            hoverEnabled: true
+                            image: "qrc:/images/controls/copy.svg"
+                            imageColor: AmneziaStyle.color.paleGray
+                            onClicked: {
+                                GC.copyToClipBoard(tgLink())
                                 PageController.showNotificationMessage(qsTr("Copied"))
                             }
                         }
@@ -431,12 +503,49 @@ PageType {
                             Layout.fillWidth: true
                         }
 
-                        // Secret — shown openly, copy only (as per design)
+                        // Secret tabs: Standard / Padded / FakeTLS
+                        ButtonGroup {
+                            id: secretTabGroup
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 12
+                            Layout.rightMargin: 12
+                            Layout.topMargin: 8
+                            Layout.bottomMargin: 4
+                            spacing: 4
+
+                            HorizontalRadioButton {
+                                Layout.fillWidth: true
+                                text: qsTr("Standard")
+                                ButtonGroup.group: secretTabGroup
+                                checked: secretTabIndex === 0
+                                onClicked: secretTabIndex = 0
+                            }
+                            HorizontalRadioButton {
+                                Layout.fillWidth: true
+                                text: qsTr("Padded")
+                                ButtonGroup.group: secretTabGroup
+                                checked: secretTabIndex === 1
+                                onClicked: secretTabIndex = 1
+                            }
+                            HorizontalRadioButton {
+                                Layout.fillWidth: true
+                                text: qsTr("FakeTLS")
+                                ButtonGroup.group: secretTabGroup
+                                checked: secretTabIndex === 2
+                                onClicked: secretTabIndex = 2
+                                visible: transportMode === "faketls"
+                            }
+                        }
+
+                        // Secret value + copy
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
                             Layout.rightMargin: 8
-                            Layout.topMargin: 8
+                            Layout.topMargin: 4
                             Layout.bottomMargin: 8
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -448,7 +557,7 @@ PageType {
                                 }
                                 CaptionTextType {
                                     Layout.fillWidth: true
-                                    text: effectiveSecret()
+                                    text: activeSecret()
                                     color: AmneziaStyle.color.paleGray
                                     wrapMode: Text.WrapAnywhere
                                     font.pixelSize: 13
@@ -460,7 +569,7 @@ PageType {
                                 hoverEnabled: true
                                 image: "qrc:/images/controls/copy.svg"
                                 imageColor: AmneziaStyle.color.paleGray
-                                onClicked: { GC.copyToClipBoard(effectiveSecret())
+                                onClicked: { GC.copyToClipBoard(activeSecret())
                                     PageController.showNotificationMessage(qsTr("Copied")) }
                             }
                         }
@@ -996,6 +1105,116 @@ PageType {
                 DividerType {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
+                }
+
+                // ── Diagnostics ───────────────────────────────────────────
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 16
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 8
+                    spacing: 8
+                    visible: containerStatus === 1
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Header2Type {
+                            Layout.fillWidth: true
+                            headerText: qsTr("Diagnostics")
+                        }
+
+                        ImageButtonType {
+                            implicitWidth: 32; implicitHeight: 32
+                            image: "qrc:/images/controls/refresh-cw.svg"
+                            imageColor: diagLoading ? AmneziaStyle.color.mutedGray : AmneziaStyle.color.paleGray
+                            hoverEnabled: !diagLoading
+                            enabled: !diagLoading
+                            onClicked: {
+                                diagLoading = true
+                                InstallController.refreshMtProxyDiagnostics(parseInt(port))
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Rectangle {
+                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                        }
+                        CaptionTextType {
+                            Layout.fillWidth: true; text: qsTr("Public port reachable"); color: AmneziaStyle.color.paleGray
+                        }
+                        CaptionTextType {
+                            text: diagClientsConnected < 0 ? qsTr("—") : (diagPortReachable ? qsTr("Yes") : qsTr("No"))
+                            color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Rectangle {
+                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                        }
+                        CaptionTextType {
+                            Layout.fillWidth: true; text: qsTr("Telegram upstream reachable"); color: AmneziaStyle.color.paleGray
+                        }
+                        CaptionTextType {
+                            text: diagClientsConnected < 0 ? qsTr("—") : (diagTelegramReachable ? qsTr("Yes") : qsTr("No"))
+                            color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Rectangle {
+                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? AmneziaStyle.color.goldenApricot : AmneziaStyle.color.mutedGray
+                        }
+                        CaptionTextType {
+                            Layout.fillWidth: true; text: qsTr("Clients connected"); color: AmneziaStyle.color.paleGray
+                        }
+                        CaptionTextType {
+                            text: diagClientsConnected < 0 ? qsTr("—") : diagClientsConnected.toString()
+                            color: AmneziaStyle.color.paleGray
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 8
+                        Rectangle {
+                            width: 8; height: 8; radius: 4; color: AmneziaStyle.color.mutedGray
+                        }
+                        CaptionTextType {
+                            Layout.fillWidth: true; text: qsTr("Last config refresh"); color: AmneziaStyle.color.paleGray
+                        }
+                        CaptionTextType {
+                            text: diagLastConfigRefresh !== "" ? diagLastConfigRefresh : qsTr("—")
+                            color: AmneziaStyle.color.mutedGray
+                        }
+                    }
+
+                    LabelWithButtonType {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: -16
+                        visible: diagStatsEndpoint !== ""
+                        text: qsTr("Stats endpoint")
+                        descriptionText: diagStatsEndpoint
+                        descriptionOnTop: true
+                        rightImageSource: "qrc:/images/controls/copy.svg"
+                        rightImageColor: AmneziaStyle.color.paleGray
+                        clickedFunction: function () {
+                            GC.copyToClipBoard(diagStatsEndpoint)
+                            PageController.showNotificationMessage(qsTr("Copied"))
+                        }
+                    }
+
+                    CaptionTextType {
+                        Layout.fillWidth: true
+                        text: diagLoading ? qsTr("Refreshing…") : qsTr("Tap ↻ to refresh diagnostics")
+                        color: AmneziaStyle.color.mutedGray
+                        visible: diagClientsConnected < 0
+                    }
                 }
 
                 // ── Warning ───────────────────────────────────────────────
