@@ -29,7 +29,8 @@ public slots:
 
     void scanServerForInstalledContainers();
 
-    void updateContainer(QJsonObject config);
+    void updateContainer(QJsonObject config, bool closePage = true);
+    void restartContainer(QJsonObject config);
 
     void removeProcessedServer();
     void rebootProcessedServer();
@@ -62,7 +63,8 @@ signals:
     void installContainerFinished(const QString &finishMessage, bool isServiceInstall);
     void installServerFinished(const QString &finishMessage);
 
-    void updateContainerFinished(const QString &message);
+    void updateContainerFinished(const QString &message, bool closePage);
+    void restartContainerFinished(const QString &message);
 
     void scanServerFinished(bool isInstalledContainerFound);
 
