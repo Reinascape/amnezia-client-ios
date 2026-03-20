@@ -38,6 +38,7 @@ PageType {
 
     // Diagnostics
     property bool diagLoading: false
+    property int syncedSecretTabIndex: 0
     property bool diagPortReachable: false
     property bool diagTelegramReachable: false
     property int  diagClientsConnected: -1
@@ -45,19 +46,28 @@ PageType {
     property string diagStatsEndpoint: ""
 
     function statusText() {
-        if (isCheckingStatus) return qsTr("Checking...")
-        if (isUpdating) return qsTr("Updating")
+        if (isCheckingStatus) {
+            return qsTr("Checking...")
+        }
+        if (isUpdating) {
+            return qsTr("Updating")
+        }
         switch (containerStatus) {
-            case 0:
+            case 0: {
                 return qsTr("Not deployed")
-            case 1:
+            }
+            case 1: {
                 return qsTr("Running")
-            case 2:
+            }
+            case 2: {
                 return qsTr("Stopped")
-            case 3:
+            }
+            case 3: {
                 return qsTr("Error")
-            default:
+            }
+            default: {
                 return qsTr("Unknown")
+            }
         }
     }
 
@@ -224,11 +234,15 @@ PageType {
                     return secret
                 }
 
-                property int secretTabIndex: transportMode === "faketls" ? 2 : 0
+                property int secretTabIndex: root.syncedSecretTabIndex
 
                 function activeSecret() {
-                    if (secretTabIndex === 0) return secretForMode("standard")
-                    if (secretTabIndex === 1) return secretForMode("padded")
+                    if (root.syncedSecretTabIndex === 0) {
+                        return secretForMode("standard")
+                    }
+                    if (root.syncedSecretTabIndex === 1) {
+                        return secretForMode("padded")
+                    }
                     return secretForMode("faketls")
                 }
 
@@ -520,22 +534,22 @@ PageType {
                                 Layout.fillWidth: true
                                 text: qsTr("Standard")
                                 ButtonGroup.group: secretTabGroup
-                                checked: secretTabIndex === 0
-                                onClicked: secretTabIndex = 0
+                                checked: root.syncedSecretTabIndex === 0
+                                onClicked: root.syncedSecretTabIndex = 0
                             }
                             HorizontalRadioButton {
                                 Layout.fillWidth: true
                                 text: qsTr("Padded")
                                 ButtonGroup.group: secretTabGroup
-                                checked: secretTabIndex === 1
-                                onClicked: secretTabIndex = 1
+                                checked: root.syncedSecretTabIndex === 1
+                                onClicked: root.syncedSecretTabIndex = 1
                             }
                             HorizontalRadioButton {
                                 Layout.fillWidth: true
                                 text: qsTr("FakeTLS")
                                 ButtonGroup.group: secretTabGroup
-                                checked: secretTabIndex === 2
-                                onClicked: secretTabIndex = 2
+                                checked: root.syncedSecretTabIndex === 2
+                                onClicked: root.syncedSecretTabIndex = 2
                                 visible: transportMode === "faketls"
                             }
                         }
@@ -822,6 +836,8 @@ PageType {
                                 rightImageColor: AmneziaStyle.color.goldenApricot
                                 clickedFunction: function () {
                                     transportMode = (index === 0) ? "standard" : "faketls"
+                                    // Sync secret tab with transport mode
+                                    root.syncedSecretTabIndex = (index === 0) ? 0 : 2
                                     transportModeDropDown.closeTriggered()
                                 }
                             }
@@ -1126,7 +1142,8 @@ PageType {
                         }
 
                         ImageButtonType {
-                            implicitWidth: 32; implicitHeight: 32
+                            implicitWidth: 32
+                            implicitHeight: 32
                             image: "qrc:/images/controls/refresh-cw.svg"
                             imageColor: diagLoading ? AmneziaStyle.color.mutedGray : AmneziaStyle.color.paleGray
                             hoverEnabled: !diagLoading
@@ -1139,12 +1156,18 @@ PageType {
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true; spacing: 8
+                        Layout.fillWidth: true
+                        spacing: 8
                         Rectangle {
-                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: diagClientsConnected >= 0 ? (diagPortReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                         }
                         CaptionTextType {
-                            Layout.fillWidth: true; text: qsTr("Public port reachable"); color: AmneziaStyle.color.paleGray
+                            Layout.fillWidth: true
+                            text: qsTr("Public port reachable")
+                            color: AmneziaStyle.color.paleGray
                         }
                         CaptionTextType {
                             text: diagClientsConnected < 0 ? qsTr("—") : (diagPortReachable ? qsTr("Yes") : qsTr("No"))
@@ -1153,12 +1176,18 @@ PageType {
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true; spacing: 8
+                        Layout.fillWidth: true
+                        spacing: 8
                         Rectangle {
-                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: diagClientsConnected >= 0 ? (diagTelegramReachable ? AmneziaStyle.color.paleGray : AmneziaStyle.color.vibrantRed) : AmneziaStyle.color.mutedGray
                         }
                         CaptionTextType {
-                            Layout.fillWidth: true; text: qsTr("Telegram upstream reachable"); color: AmneziaStyle.color.paleGray
+                            Layout.fillWidth: true
+                            text: qsTr("Telegram upstream reachable")
+                            color: AmneziaStyle.color.paleGray
                         }
                         CaptionTextType {
                             text: diagClientsConnected < 0 ? qsTr("—") : (diagTelegramReachable ? qsTr("Yes") : qsTr("No"))
@@ -1167,12 +1196,18 @@ PageType {
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true; spacing: 8
+                        Layout.fillWidth: true
+                        spacing: 8
                         Rectangle {
-                            width: 8; height: 8; radius: 4; color: diagClientsConnected >= 0 ? AmneziaStyle.color.goldenApricot : AmneziaStyle.color.mutedGray
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: diagClientsConnected >= 0 ? AmneziaStyle.color.goldenApricot : AmneziaStyle.color.mutedGray
                         }
                         CaptionTextType {
-                            Layout.fillWidth: true; text: qsTr("Clients connected"); color: AmneziaStyle.color.paleGray
+                            Layout.fillWidth: true
+                            text: qsTr("Clients connected")
+                            color: AmneziaStyle.color.paleGray
                         }
                         CaptionTextType {
                             text: diagClientsConnected < 0 ? qsTr("—") : diagClientsConnected.toString()
@@ -1181,12 +1216,18 @@ PageType {
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true; spacing: 8
+                        Layout.fillWidth: true
+                        spacing: 8
                         Rectangle {
-                            width: 8; height: 8; radius: 4; color: AmneziaStyle.color.mutedGray
+                            width: 8
+                            height: 8
+                            radius: 4
+                            color: AmneziaStyle.color.mutedGray
                         }
                         CaptionTextType {
-                            Layout.fillWidth: true; text: qsTr("Last config refresh"); color: AmneziaStyle.color.paleGray
+                            Layout.fillWidth: true
+                            text: qsTr("Last config refresh")
+                            color: AmneziaStyle.color.paleGray
                         }
                         CaptionTextType {
                             text: diagLastConfigRefresh !== "" ? diagLastConfigRefresh : qsTr("—")
