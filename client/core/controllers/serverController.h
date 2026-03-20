@@ -28,6 +28,7 @@ public:
     ErrorCode setupContainer(const ServerCredentials &credentials, DockerContainer container, QJsonObject &config, bool isUpdate = false);
     ErrorCode updateContainer(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &oldConfig,
                               QJsonObject &newConfig);
+    ErrorCode restartContainer(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config);
 
     ErrorCode startupContainerWorker(const ServerCredentials &credentials, DockerContainer container,
                                      const QJsonObject &config = QJsonObject());
@@ -85,6 +86,7 @@ private:
                                    const QJsonObject &config = QJsonObject());
     ErrorCode runContainerWorker(const ServerCredentials &credentials, DockerContainer container, QJsonObject &config);
     ErrorCode configureContainerWorker(const ServerCredentials &credentials, DockerContainer container, QJsonObject &config);
+    ErrorCode restartContainerWorker(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config);
 
     ErrorCode isServerPortBusy(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config);
     bool isReinstallContainerRequired(DockerContainer container, const QJsonObject &oldConfig, const QJsonObject &newConfig);
