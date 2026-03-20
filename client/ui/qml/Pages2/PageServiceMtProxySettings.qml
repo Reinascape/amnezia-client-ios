@@ -39,6 +39,9 @@ PageType {
     // Diagnostics
     property bool diagLoading: false
     property int syncedSecretTabIndex: 0
+    property bool pendingEnableAfterRestart: false
+    property bool pendingRestart: false
+    property bool pendingUpdateAfterEnable: false
     property bool diagPortReachable: false
     property bool diagTelegramReachable: false
     property int  diagClientsConnected: -1
@@ -80,6 +83,11 @@ PageType {
         target: InstallController
 
         function onUpdateContainerFinished(message, closePage) {
+            if (pendingRestart) {
+                pendingRestart = false
+                InstallController.restartContainer(MtProxyConfigModel.getConfig())
+                return
+            }
             isUpdating = false
             PageController.showNotificationMessage(message)
             if (closePage) {
@@ -89,6 +97,7 @@ PageType {
 
         function onRestartContainerFinished(message) {
             isUpdating = false
+            containerStatus = 1
             PageController.showNotificationMessage(message)
         }
 
@@ -96,9 +105,26 @@ PageType {
             isUpdating = false
             containerStatus = previousContainerStatus
             MtProxyConfigModel.setEnabled(previousEnabled)
+            MtProxyConfigModel.setPort(previousPort)
+            MtProxyConfigModel.setTag(previousTag)
+            MtProxyConfigModel.setPublicHost(previousPublicHost)
+            MtProxyConfigModel.setTransportMode(previousTransportMode)
+            MtProxyConfigModel.setTlsDomain(previousTlsDomain)
+            MtProxyConfigModel.setWorkersMode(previousWorkersMode)
+            MtProxyConfigModel.setWorkers(previousWorkers)
+            MtProxyConfigModel.setNatEnabled(previousNatEnabled)
+            MtProxyConfigModel.setNatInternalIp(previousNatInternalIp)
+            MtProxyConfigModel.setNatExternalIp(previousNatExternalIp)
         }
 
         function onSetContainerEnabledFinished(enabled) {
+            if (enabled && pendingUpdateAfterEnable) {
+                pendingUpdateAfterEnable = false
+                // Container is now running — apply latest config with new secret
+                root.pendingRestart = true
+                InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
+                return
+            }
             isUpdating = false
             containerStatus = enabled ? 1 : 2
             PageController.showNotificationMessage(
@@ -108,8 +134,13 @@ PageType {
         function onContainerStatusRefreshed(status) {
             isCheckingStatus = false
             containerStatus = status
-            if (status === 1) MtProxyConfigModel.setEnabled(true)
-            else if (status === 2) MtProxyConfigModel.setEnabled(false)
+            if (status === 1) {
+                MtProxyConfigModel.setEnabled(true)
+                // Fetch active secret from server to sync local config
+                InstallController.fetchMtProxySecret()
+            } else if (status === 2) {
+                MtProxyConfigModel.setEnabled(false)
+            }
         }
 
         function onMtProxyDiagnosticsRefreshed(portReachable, telegramReachable, clientsConnected, lastConfigRefresh, statsEndpoint) {
@@ -119,6 +150,11 @@ PageType {
             diagClientsConnected = clientsConnected
             diagLastConfigRefresh = lastConfigRefresh
             diagStatsEndpoint = statsEndpoint
+        }
+
+        function onMtProxySecretFetched(secret) {
+            // Update local config with the active secret from the server
+            MtProxyConfigModel.setSecret(secret)
         }
     }
 
@@ -182,12 +218,10 @@ PageType {
             TabButtonType {
                 text: qsTr("Connection")
                 isSelected: mainTabBar.currentIndex === 0
-                width: mainTabBar.width / 2
             }
             TabButtonType {
                 text: qsTr("Settings")
                 isSelected: mainTabBar.currentIndex === 1
-                width: mainTabBar.width / 2
             }
         }
     }
@@ -653,7 +687,13 @@ PageType {
                             previousContainerStatus = containerStatus
                             isEnabled = checked
                             isUpdating = true
-                            InstallController.setContainerEnabled(ContainerEnum.MtProxy, checked)
+                            if (checked) {
+                                // Start container first, then apply latest config (incl. new secret)
+                                root.pendingUpdateAfterEnable = true
+                                InstallController.setContainerEnabled(ContainerEnum.MtProxy, true)
+                            } else {
+                                InstallController.setContainerEnabled(ContainerEnum.MtProxy, false)
+                            }
                         }
                     }
                 }
@@ -699,10 +739,17 @@ PageType {
                                     qsTr("Generate"),
                                     qsTr("Cancel"),
                                         function () {
-                                        isUpdating = true
-                                        MtProxyConfigModel.generateSecret()
-                                        InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
-                                        InstallController.restartContainer(MtProxyConfigModel.getConfig())
+                                        if (containerStatus === 1) {
+                                            // Running — apply immediately
+                                            isUpdating = true
+                                            MtProxyConfigModel.generateSecret()
+                                            root.pendingRestart = true
+                                            InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
+                                        } else {
+                                            // Stopped — save locally, apply on next enable
+                                            MtProxyConfigModel.generateSecret()
+                                            PageController.showNotificationMessage(qsTr("New secret saved. It will be applied when MTProxy is started."))
+                                        }
                                     },
                                         function () {
                                     }
@@ -963,8 +1010,8 @@ PageType {
                                 imageColor: AmneziaStyle.color.vibrantRed
                                 onClicked: {
                                     MtProxyConfigModel.removeAdditionalSecret(index)
+                                    root.pendingRestart = true
                                     InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
-                                    InstallController.restartContainer(MtProxyConfigModel.getConfig())
                                 }
                             }
                         }
@@ -980,8 +1027,8 @@ PageType {
                         text: qsTr("Add additional secret")
                         clickedFunc: function () {
                             MtProxyConfigModel.addAdditionalSecret()
+                            root.pendingRestart = true
                             InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
-                            InstallController.restartContainer(MtProxyConfigModel.getConfig())
                         }
                     }
 
@@ -1006,7 +1053,7 @@ PageType {
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16
-                        Layout.bottomMargin: 4
+                        Layout.bottomMargin: 16
                         spacing: 0
                         visible: transportMode !== "faketls"
 
@@ -1285,6 +1332,10 @@ PageType {
                             portTextField.errorText = qsTr("The port must be in the range of 1 to 65535")
                             return
                         }
+                        // FakeTLS requires workers=0
+                        if (transportMode === "faketls") {
+                            workers = "0"
+                        }
                         previousPort = port
                         previousTag = tag
                         previousPublicHost = publicHost
@@ -1296,8 +1347,8 @@ PageType {
                         previousNatInternalIp = natInternalIp
                         previousNatExternalIp = natExternalIp
                         isUpdating = true
+                        root.pendingRestart = true
                         InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
-                        InstallController.restartContainer(MtProxyConfigModel.getConfig())
                     }
                 }
             }
