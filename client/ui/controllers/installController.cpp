@@ -886,64 +886,64 @@ void InstallController::refreshContainerStatus(DockerContainer container)
     watcher->setFuture(future);
 }
 
-void InstallController::refreshMtProxyDiagnostics(int port)
+void InstallController::refreshContainerDiagnostics(DockerContainer container, int port)
 {
-    int serverIndex = m_serversModel->getProcessedServerIndex();
-    ServerCredentials serverCredentials =
-            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+    switch (container) {
+    case DockerContainer::MtProxy: {
+        int serverIndex = m_serversModel->getProcessedServerIndex();
+        ServerCredentials serverCredentials =
+                qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
 
-    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+        QSharedPointer<ServerController> serverController(new ServerController(m_settings));
 
-    QFuture<ServerController::MtProxyDiagnostics> future =
-            QtConcurrent::run([serverController, serverCredentials, port]() mutable {
-                return serverController->getMtProxyDiagnostics(serverCredentials, port);
-            });
+        QFuture<ServerController::ContainerDiagnostics> future =
+                QtConcurrent::run([serverController, serverCredentials, container, port]() mutable {
+                    return serverController->getContainerDiagnostics(serverCredentials, container, port);
+                });
 
-    auto *watcher = new QFutureWatcher<ServerController::MtProxyDiagnostics>(this);
-    connect(watcher, &QFutureWatcher<ServerController::MtProxyDiagnostics>::finished, this, [this, watcher]() {
-        auto diag = watcher->result();
-        emit mtProxyDiagnosticsRefreshed(
-            diag.portReachable,
-            diag.telegramReachable,
-            diag.clientsConnected,
-            diag.lastConfigRefresh,
-            diag.statsEndpoint
-        );
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
+        auto *watcher = new QFutureWatcher<ServerController::ContainerDiagnostics>(this);
+        connect(watcher, &QFutureWatcher<ServerController::ContainerDiagnostics>::finished, this, [this, watcher]() {
+            auto diag = watcher->result();
+            emit containerDiagnosticsRefreshed(diag.portReachable, diag.upstreamReachable, diag.clientsConnected,
+                                               diag.lastConfigRefresh, diag.statsEndpoint);
+            watcher->deleteLater();
+        });
+        watcher->setFuture(future);
+    }
+    default: {
+        break;
+    }
+    }
 }
 
-void InstallController::fetchMtProxySecret()
+void InstallController::fetchContainerSecret(DockerContainer container)
 {
-    int serverIndex = m_serversModel->getProcessedServerIndex();
-    ServerCredentials serverCredentials =
-            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+    switch (container) {
+    case DockerContainer::MtProxy: {
+        int serverIndex = m_serversModel->getProcessedServerIndex();
+        ServerCredentials serverCredentials =
+                qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
 
-    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+        QSharedPointer<ServerController> serverController(new ServerController(m_settings));
 
-    QFuture<QString> future = QtConcurrent::run([serverController, serverCredentials]() mutable {
-        QString stdOut;
-        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
-            stdOut += data;
-            return ErrorCode::NoError;
-        };
-        serverController->runScript(serverCredentials,
-                                    QString("sudo docker exec amnezia-mtproxy cat /data/secret"),
-                                    cbReadStdOut);
-        return stdOut.trimmed();
-    });
+        QFuture<QString> future = QtConcurrent::run([serverController, serverCredentials, container]() mutable {
+            return serverController->fetchContainerSecret(serverCredentials, container);
+        });
 
-    auto *watcher = new QFutureWatcher<QString>(this);
-    connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher]() {
-        QString secret = watcher->result();
-        // Validate: must be exactly 32 hex chars
-        if (QRegularExpression("^[0-9a-fA-F]{32}$").match(secret).hasMatch()) {
-            emit mtProxySecretFetched(secret);
-        }
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
+        auto *watcher = new QFutureWatcher<QString>(this);
+        connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher]() {
+            QString secret = watcher->result();
+            if (!secret.isEmpty()) {
+                emit containerSecretFetched(secret);
+            }
+            watcher->deleteLater();
+        });
+        watcher->setFuture(future);
+    }
+    default: {
+        break;
+    }
+    }
 }
 
 void InstallController::removeApiConfig(const int serverIndex)

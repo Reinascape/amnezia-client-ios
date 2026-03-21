@@ -607,85 +607,117 @@ ErrorCode ServerController::stopContainer(const ServerCredentials &credentials, 
 ServerController::ContainerStatus ServerController::getContainerStatus(const ServerCredentials &credentials,
                                                                        DockerContainer container)
 {
-    QString stdOut;
-    auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
-        stdOut += data;
-        return ErrorCode::NoError;
-    };
-
-    QString script = replaceVars(
-            "sudo docker inspect --format '{{.State.Status}}' $CONTAINER_NAME 2>/dev/null || echo 'not_found'",
-            genVarsForScript(credentials, container));
-
-    ErrorCode e = runScript(credentials, script, cbReadStdOut);
-    if (e != ErrorCode::NoError) {
-        return ContainerStatus::Error;
+    switch (container) {
+    case amnezia::ContainerEnumNS::MtProxy: {
     }
+        QString stdOut;
+        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
+            stdOut += data;
+            return ErrorCode::NoError;
+        };
 
-    stdOut = stdOut.trimmed();
+        QString script = replaceVars(
+                "sudo docker inspect --format '{{.State.Status}}' $CONTAINER_NAME 2>/dev/null || echo 'not_found'",
+                genVarsForScript(credentials, container));
 
-    if (stdOut == "running") {
-        return ContainerStatus::Running;
-    }
-    if (stdOut == "not_found" || stdOut.isEmpty()) {
-        return ContainerStatus::NotDeployed;
-    }
-    if (stdOut == "exited" || stdOut == "created" || stdOut == "paused") {
-        return ContainerStatus::Stopped;
+        ErrorCode e = runScript(credentials, script, cbReadStdOut);
+        if (e != ErrorCode::NoError) {
+            return ContainerStatus::Error;
+        }
+
+        stdOut = stdOut.trimmed();
+
+        if (stdOut == "running") {
+            return ContainerStatus::Running;
+        }
+        if (stdOut == "not_found" || stdOut.isEmpty()) {
+            return ContainerStatus::NotDeployed;
+        }
+        if (stdOut == "exited" || stdOut == "created" || stdOut == "paused") {
+            return ContainerStatus::Stopped;
+        }
     }
 
     return ContainerStatus::Error;
 }
 
-ServerController::MtProxyDiagnostics ServerController::getMtProxyDiagnostics(const ServerCredentials &credentials, int port)
+ServerController::ContainerDiagnostics ServerController::getContainerDiagnostics(const ServerCredentials &credentials,
+                                                                                 DockerContainer container, int port)
 {
-    MtProxyDiagnostics diag;
+    ContainerDiagnostics diag;
 
-    // Single script — runs all checks and outputs labeled lines
-    QString script = QString(
-        // 1. Port reachable — check if mtproto-proxy is listening on port 443 inside container
-        "PORT_OK=$(sudo docker exec amnezia-mtproxy sh -c 'ss -tlnp 2>/dev/null | grep -q :%1 && echo yes || echo no' 2>/dev/null || echo no); "
-        // 2. Telegram upstream — try to reach Telegram config endpoint
-        "TG_OK=$(curl -s --max-time 5 -o /dev/null -w '%%{http_code}' https://core.telegram.org/getProxySecret 2>/dev/null | grep -q '200' && echo yes || echo no); "
-        // 3. Clients connected — from stats endpoint inside container
-        "CLIENTS=$(sudo docker exec amnezia-mtproxy sh -c 'curl -s --max-time 3 http://localhost:2398/stats 2>/dev/null | grep -o \"total_special_connections:[0-9]*\" | cut -d: -f2' 2>/dev/null); "
-        // 4. Last config refresh — modification time of proxy-multi.conf
-        "CONF_TIME=$(sudo docker exec amnezia-mtproxy sh -c 'stat -c \"%y\" /data/proxy-multi.conf 2>/dev/null | cut -d. -f1' 2>/dev/null || echo unknown); "
-        "echo \"PORT_OK=${PORT_OK}\"; "
-        "echo \"TG_OK=${TG_OK}\"; "
-        "echo \"CLIENTS=${CLIENTS:-0}\"; "
-        "echo \"CONF_TIME=${CONF_TIME}\"; "
-        "echo \"STATS=http://localhost:2398/stats\";"
-    ).arg(port);
+    switch (container) {
+    case DockerContainer::MtProxy: {
+        // Single script — runs all checks and outputs labeled lines
+        QString script =
+                QString(
+                        // 1. Port reachable — check if mtproto-proxy is listening on port 443 inside container
+                        "PORT_OK=$(sudo docker exec amnezia-mtproxy sh -c 'ss -tlnp 2>/dev/null | grep -q :%1 && echo "
+                        "yes || echo no' 2>/dev/null || echo no); "
+                        // 2. Telegram upstream — try to reach Telegram config endpoint
+                        "TG_OK=$(curl -s --max-time 5 -o /dev/null -w '%%{http_code}' "
+                        "https://core.telegram.org/getProxySecret 2>/dev/null | grep -q '200' && echo yes || echo no); "
+                        // 3. Clients connected — from stats endpoint inside container
+                        "CLIENTS=$(sudo docker exec amnezia-mtproxy sh -c 'curl -s --max-time 3 "
+                        "http://localhost:2398/stats 2>/dev/null | grep -o \"total_special_connections:[0-9]*\" | cut "
+                        "-d: -f2' 2>/dev/null); "
+                        // 4. Last config refresh — modification time of proxy-multi.conf
+                        "CONF_TIME=$(sudo docker exec amnezia-mtproxy sh -c 'stat -c \"%y\" /data/proxy-multi.conf "
+                        "2>/dev/null | cut -d. -f1' 2>/dev/null || echo unknown); "
+                        "echo \"PORT_OK=${PORT_OK}\"; "
+                        "echo \"TG_OK=${TG_OK}\"; "
+                        "echo \"CLIENTS=${CLIENTS:-0}\"; "
+                        "echo \"CONF_TIME=${CONF_TIME}\"; "
+                        "echo \"STATS=http://localhost:2398/stats\";")
+                        .arg(port);
+        QString stdOut;
+        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
+            stdOut += data;
+            return ErrorCode::NoError;
+        };
 
-    QString stdOut;
-    auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
-        stdOut += data;
-        return ErrorCode::NoError;
-    };
-
-    ErrorCode e = runScript(credentials, script, cbReadStdOut);
-    if (e != ErrorCode::NoError) {
-        return diag;
-    }
-
-    diag.available = true;
-
-    for (const QString &line : stdOut.split("\n")) {
-        if (line.startsWith("PORT_OK=")) {
-            diag.portReachable = line.mid(8).trimmed() == "yes";
-        } else if (line.startsWith("TG_OK=")) {
-            diag.telegramReachable = line.mid(6).trimmed() == "yes";
-        } else if (line.startsWith("CLIENTS=")) {
-            diag.clientsConnected = line.mid(8).trimmed().toInt();
-        } else if (line.startsWith("CONF_TIME=")) {
-            diag.lastConfigRefresh = line.mid(10).trimmed();
-        } else if (line.startsWith("STATS=")) {
-            diag.statsEndpoint = line.mid(6).trimmed();
+        ErrorCode e = runScript(credentials, script, cbReadStdOut);
+        if (e != ErrorCode::NoError) {
+            return diag;
         }
+
+        diag.available = true;
+        for (const QString &line : stdOut.split("\n")) {
+            if (line.startsWith("PORT_OK=")) {
+                diag.portReachable = line.mid(8).trimmed() == "yes";
+            } else if (line.startsWith("TG_OK=")) {
+                diag.upstreamReachable = line.mid(6).trimmed() == "yes";
+            } else if (line.startsWith("CLIENTS=")) {
+                diag.clientsConnected = line.mid(8).trimmed().toInt();
+            } else if (line.startsWith("CONF_TIME=")) {
+                diag.lastConfigRefresh = line.mid(10).trimmed();
+            } else if (line.startsWith("STATS="))
+                diag.statsEndpoint = line.mid(6).trimmed();
+        }
+        break;
+    }
+    default: { // Diagnostics not implemented for this container
+        break;
+    }
     }
 
     return diag;
+}
+
+QString ServerController::fetchContainerSecret(const ServerCredentials &credentials, DockerContainer container)
+{
+    switch (container) {
+    case DockerContainer::MtProxy: {
+        QString stdOut;
+        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
+            stdOut += data;
+            return ErrorCode::NoError;
+        };
+        runScript(credentials, "sudo docker exec amnezia-mtproxy cat /data/secret", cbReadStdOut);
+        return stdOut.trimmed();
+    }
+    default: return QString();
+    }
 }
 
 ServerController::Vars ServerController::genVarsForScript(const ServerCredentials &credentials, DockerContainer container,

@@ -44,16 +44,18 @@ public:
     };
     ContainerStatus getContainerStatus(const ServerCredentials &credentials, DockerContainer container);
 
-    struct MtProxyDiagnostics
+    struct ContainerDiagnostics
     {
         bool portReachable = false;
-        bool telegramReachable = false;
+        bool upstreamReachable = false; // telegramReachable for MtProxy, or generic upstream
         int clientsConnected = -1;
         QString lastConfigRefresh;
         QString statsEndpoint;
         bool available = false;
     };
-    MtProxyDiagnostics getMtProxyDiagnostics(const ServerCredentials &credentials, int port);
+    ContainerDiagnostics getContainerDiagnostics(const ServerCredentials &credentials, DockerContainer container,
+                                                 int port = 0);
+    QString fetchContainerSecret(const ServerCredentials &credentials, DockerContainer container);
     ErrorCode uploadTextFileToContainer(DockerContainer container, const ServerCredentials &credentials, const QString &file,
                                         const QString &path,
                                         libssh::ScpOverwriteMode overwriteMode = libssh::ScpOverwriteMode::ScpOverwriteExisting);
@@ -107,6 +109,8 @@ signals:
     void serverIsBusy(const bool isBusy);
 };
 
-Q_DECLARE_METATYPE(ServerController::MtProxyDiagnostics)
+Q_DECLARE_METATYPE(ServerController::ContainerDiagnostics)
 
 #endif // SERVERCONTROLLER_H
+
+
