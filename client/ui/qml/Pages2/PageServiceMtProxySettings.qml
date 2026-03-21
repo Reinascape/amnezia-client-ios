@@ -32,9 +32,24 @@ PageType {
     property string previousTlsDomain: ""
     property string previousWorkersMode: "auto"
     property string previousWorkers: "2"
+    readonly property int maxWorkers: 32
     property bool   previousNatEnabled: false
     property string previousNatInternalIp: ""
     property string previousNatExternalIp: ""
+
+    // savedTransportMode reflects the deployed config (not live Settings values)
+    // Updated only after successful Save. Used by Connection tab.
+    property string savedTransportMode: ""
+    property string savedTlsDomain: ""
+    property string savedPublicHost: ""
+
+    onSavedTransportModeChanged: {
+        if (savedTransportMode === "faketls") {
+            root.syncedSecretTabIndex = 2
+        } else if (savedTransportMode !== "") {
+            root.syncedSecretTabIndex = 1  // default to Padded for standard mode
+        }
+    }
 
     // Diagnostics
     property bool diagLoading: false
@@ -77,6 +92,10 @@ PageType {
     Component.onCompleted: {
         isCheckingStatus = true
         InstallController.refreshContainerStatus(ContainerEnum.MtProxy)
+        // Initialize saved* from the deployed config
+        root.savedTransportMode = MtProxyConfigModel.getTransportMode()
+        root.savedTlsDomain = MtProxyConfigModel.getTlsDomain()
+        root.savedPublicHost = MtProxyConfigModel.getPublicHost()
     }
 
     Connections {
@@ -98,6 +117,9 @@ PageType {
         function onRestartContainerFinished(message) {
             isUpdating = false
             containerStatus = 1
+            root.savedTransportMode = MtProxyConfigModel.getTransportMode()
+            root.savedTlsDomain = MtProxyConfigModel.getTlsDomain()
+            root.savedPublicHost = MtProxyConfigModel.getPublicHost()
             PageController.showNotificationMessage(message)
         }
 
@@ -134,27 +156,31 @@ PageType {
         function onContainerStatusRefreshed(status) {
             isCheckingStatus = false
             containerStatus = status
+            // Refresh saved* now that model is fully loaded
+            root.savedTransportMode = MtProxyConfigModel.getTransportMode()
+            root.savedTlsDomain = MtProxyConfigModel.getTlsDomain()
+            root.savedPublicHost = MtProxyConfigModel.getPublicHost()
             if (status === 1) {
                 MtProxyConfigModel.setEnabled(true)
                 // Fetch active secret from server to sync local config
-                InstallController.fetchMtProxySecret()
+                InstallController.fetchContainerSecret(ContainerEnum.MtProxy)
             } else if (status === 2) {
                 MtProxyConfigModel.setEnabled(false)
             }
         }
 
-        function onMtProxyDiagnosticsRefreshed(portReachable, telegramReachable, clientsConnected, lastConfigRefresh, statsEndpoint) {
+        function onContainerDiagnosticsRefreshed(portReachable, upstreamReachable, clientsConnected, lastConfigRefresh, statsEndpoint) {
             diagLoading = false
             diagPortReachable = portReachable
-            diagTelegramReachable = telegramReachable
+            diagTelegramReachable = upstreamReachable
             diagClientsConnected = clientsConnected
             diagLastConfigRefresh = lastConfigRefresh
             diagStatsEndpoint = statsEndpoint
         }
 
-        function onMtProxySecretFetched(secret) {
-            // Update local config with the active secret from the server
-            MtProxyConfigModel.setSecret(secret)
+        function onContainerSecretFetched(secret) {
+            // Validation and model update happens in the model
+            MtProxyConfigModel.validateAndSetSecret(secret)
         }
     }
 
@@ -261,7 +287,7 @@ PageType {
 
                 function secretForMode(mode) {
                     if (mode === "faketls") {
-                        return tlsDomain !== "" ? "ee" + secret + domainToHex(tlsDomain) : "ee" + secret
+                        return root.savedTlsDomain !== "" ? "ee" + secret + domainToHex(root.savedTlsDomain) : "ee" + secret
                     } else if (mode === "padded") {
                         return "dd" + secret
                     }
@@ -285,7 +311,7 @@ PageType {
                 }
 
                 function effectiveHost() {
-                    return publicHost !== "" ? publicHost : ServersModel.getProcessedServerData("hostName")
+                    return root.savedPublicHost !== "" ? root.savedPublicHost : ServersModel.getProcessedServerData("hostName")
                 }
 
                 function tmeLink() {
@@ -570,6 +596,7 @@ PageType {
                                 ButtonGroup.group: secretTabGroup
                                 checked: root.syncedSecretTabIndex === 0
                                 onClicked: root.syncedSecretTabIndex = 0
+                                visible: root.savedTransportMode !== "faketls"
                             }
                             HorizontalRadioButton {
                                 Layout.fillWidth: true
@@ -577,6 +604,7 @@ PageType {
                                 ButtonGroup.group: secretTabGroup
                                 checked: root.syncedSecretTabIndex === 1
                                 onClicked: root.syncedSecretTabIndex = 1
+                                visible: root.savedTransportMode !== "faketls"
                             }
                             HorizontalRadioButton {
                                 Layout.fillWidth: true
@@ -584,7 +612,7 @@ PageType {
                                 ButtonGroup.group: secretTabGroup
                                 checked: root.syncedSecretTabIndex === 2
                                 onClicked: root.syncedSecretTabIndex = 2
-                                visible: transportMode === "faketls"
+                                visible: root.savedTransportMode === "faketls"
                             }
                         }
 
@@ -912,8 +940,8 @@ PageType {
                                 clickedFunction: function () {
                                     transportMode = (index === 0) ? "standard" : "faketls"
                                     MtProxyConfigModel.setTransportMode(transportMode)
-                                    // Sync secret tab with transport mode
-                                    root.syncedSecretTabIndex = (index === 0) ? 0 : 2
+                                    // Note: syncedSecretTabIndex is NOT updated here —
+                                    // Connection tab reflects saved config only, not live Settings
                                     transportModeDropDown.closeTriggered()
                                 }
                             }
@@ -1128,7 +1156,7 @@ PageType {
                         textField.maximumLength: 3
                         textField.validator: IntValidator {
                             bottom: 1
-                            top: 999
+                            top: root.maxWorkers
                         }
                         textField.onEditingFinished: {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
@@ -1233,7 +1261,7 @@ PageType {
                             enabled: !diagLoading
                             onClicked: {
                                 diagLoading = true
-                                InstallController.refreshMtProxyDiagnostics(parseInt(port))
+                                InstallController.refreshContainerDiagnostics(ContainerEnum.MtProxy, parseInt(port))
                             }
                         }
                     }
