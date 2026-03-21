@@ -765,7 +765,7 @@ PageType {
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    Layout.bottomMargin: 16
+                    Layout.bottomMargin: 4
                     headerText: qsTr("Public host / IP")
                     textField.placeholderText: ServersModel.getProcessedServerData("hostName")
                     textField.text: publicHost
@@ -773,8 +773,34 @@ PageType {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                         if (textField.text !== publicHost) {
                             publicHost = textField.text
+                            MtProxyConfigModel.setPublicHost(publicHost)
                         }
                     }
+                }
+
+                CaptionTextType {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 4
+                    visible: publicHostTextField.textField.text === ""
+                    text: qsTr("Leave empty to use server IP automatically")
+                    color: AmneziaStyle.color.mutedGray
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                }
+
+                CaptionTextType {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.bottomMargin: 12
+                    visible: publicHostTextField.textField.text !== "" &&
+                        publicHostTextField.textField.text !== ServersModel.getProcessedServerData("hostName")
+                    text: qsTr("⚠ This overrides the server IP in connection links. Make sure this host/domain points to your server.")
+                    color: AmneziaStyle.color.goldenApricot
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
                 }
 
                 // ── Server port ───────────────────────────────────────────
@@ -796,6 +822,7 @@ PageType {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                         if (textField.text !== port) {
                             port = textField.text
+                            MtProxyConfigModel.setPort(port)
                         }
                     }
                 }
@@ -827,6 +854,7 @@ PageType {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                         if (textField.text !== tag) {
                             tag = textField.text
+                            MtProxyConfigModel.setTag(tag)
                         }
                     }
                 }
@@ -883,6 +911,7 @@ PageType {
                                 rightImageColor: AmneziaStyle.color.goldenApricot
                                 clickedFunction: function () {
                                     transportMode = (index === 0) ? "standard" : "faketls"
+                                    MtProxyConfigModel.setTransportMode(transportMode)
                                     // Sync secret tab with transport mode
                                     root.syncedSecretTabIndex = (index === 0) ? 0 : 2
                                     transportModeDropDown.closeTriggered()
@@ -907,6 +936,7 @@ PageType {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                         if (textField.text !== tlsDomain) {
                             tlsDomain = textField.text
+                            MtProxyConfigModel.setTlsDomain(tlsDomain)
                         }
                     }
                 }
@@ -1053,7 +1083,7 @@ PageType {
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
                         Layout.rightMargin: 16
-                        Layout.bottomMargin: 16
+                        Layout.bottomMargin: 4
                         spacing: 0
                         visible: transportMode !== "faketls"
 
@@ -1062,14 +1092,14 @@ PageType {
                             text: qsTr("Auto")
                             ButtonGroup.group: workerModeGroup
                             checked: workersMode === "auto"
-                            onClicked: workersMode = "auto"
+                            onClicked: { workersMode = "auto"; MtProxyConfigModel.setWorkersMode("auto") }
                         }
                         HorizontalRadioButton {
                             Layout.fillWidth: true
                             text: qsTr("Manual")
                             ButtonGroup.group: workerModeGroup
                             checked: workersMode === "manual"
-                            onClicked: workersMode = "manual"
+                            onClicked: { workersMode = "manual"; MtProxyConfigModel.setWorkersMode("manual") }
                         }
                     }
 
@@ -1104,6 +1134,7 @@ PageType {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                             if (textField.text !== workers) {
                                 workers = textField.text
+                                MtProxyConfigModel.setWorkers(workers)
                             }
                         }
                     }
@@ -1123,7 +1154,10 @@ PageType {
                         descriptionText: qsTr("Enable if your server is not directly accessible from the internet, e.g. Docker or private network")
                         checked: natEnabled
                         onToggled: function () {
-                            if (checked !== natEnabled) natEnabled = checked
+                            if (checked !== natEnabled) {
+                                natEnabled = checked
+                                MtProxyConfigModel.setNatEnabled(natEnabled)
+                            }
                         }
                     }
 
@@ -1141,6 +1175,7 @@ PageType {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                             if (textField.text !== natInternalIp) {
                                 natInternalIp = textField.text
+                                MtProxyConfigModel.setNatInternalIp(natInternalIp)
                             }
                         }
                     }
@@ -1159,6 +1194,7 @@ PageType {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')
                             if (textField.text !== natExternalIp) {
                                 natExternalIp = textField.text
+                                MtProxyConfigModel.setNatExternalIp(natExternalIp)
                             }
                         }
                     }
@@ -1332,10 +1368,25 @@ PageType {
                             portTextField.errorText = qsTr("The port must be in the range of 1 to 65535")
                             return
                         }
+                        // Force sync all fields to model before saving
+                        // (onEditingFinished may not have fired if user didn't blur the field)
+                        MtProxyConfigModel.setPort(portTextField.textField.text)
+                        MtProxyConfigModel.setTag(tagTextField.textField.text)
+                        MtProxyConfigModel.setPublicHost(publicHostTextField.textField.text)
+                        MtProxyConfigModel.setTransportMode(transportMode)
+                        MtProxyConfigModel.setTlsDomain(tlsDomainTextField.textField.text)
                         // FakeTLS requires workers=0
                         if (transportMode === "faketls") {
                             workers = "0"
+                            MtProxyConfigModel.setWorkers("0")
+                        } else {
+                            MtProxyConfigModel.setWorkersMode(workersMode)
+                            MtProxyConfigModel.setWorkers(workers)
                         }
+                        MtProxyConfigModel.setNatEnabled(natEnabled)
+                        MtProxyConfigModel.setNatInternalIp(natInternalIpTextField.textField.text)
+                        MtProxyConfigModel.setNatExternalIp(natExternalIpTextField.textField.text)
+
                         previousPort = port
                         previousTag = tag
                         previousPublicHost = publicHost
