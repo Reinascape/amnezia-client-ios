@@ -550,6 +550,17 @@ ErrorCode ServerController::configureContainerWorker(const ServerCredentials &cr
                                                  genVarsForScript(credentials, container, config)),
                                      cbReadStdOut, cbReadStdErr);
 
+    if (e) {
+        return e;
+    }
+
+    // docker exec succeeds at SSH level even if the container is stopped —
+    // detect this by checking the output for docker daemon error messages.
+    if (stdOut.contains("is not running") || stdOut.contains("No such container")) {
+        qDebug() << "configureContainerWorker: container not running, stdout:" << stdOut;
+        return ErrorCode::ServerContainerMissingError;
+    }
+
     VpnConfigurationsController::updateContainerConfigAfterInstallation(container, config, stdOut);
 
     return e;
