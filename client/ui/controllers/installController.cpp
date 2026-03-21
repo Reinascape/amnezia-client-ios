@@ -914,6 +914,38 @@ void InstallController::refreshMtProxyDiagnostics(int port)
     watcher->setFuture(future);
 }
 
+void InstallController::fetchMtProxySecret()
+{
+    int serverIndex = m_serversModel->getProcessedServerIndex();
+    ServerCredentials serverCredentials =
+            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+
+    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+
+    QFuture<QString> future = QtConcurrent::run([serverController, serverCredentials]() mutable {
+        QString stdOut;
+        auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
+            stdOut += data;
+            return ErrorCode::NoError;
+        };
+        serverController->runScript(serverCredentials,
+                                    QString("sudo docker exec amnezia-mtproxy cat /data/secret"),
+                                    cbReadStdOut);
+        return stdOut.trimmed();
+    });
+
+    auto *watcher = new QFutureWatcher<QString>(this);
+    connect(watcher, &QFutureWatcher<QString>::finished, this, [this, watcher]() {
+        QString secret = watcher->result();
+        // Validate: must be exactly 32 hex chars
+        if (QRegularExpression("^[0-9a-fA-F]{32}$").match(secret).hasMatch()) {
+            emit mtProxySecretFetched(secret);
+        }
+        watcher->deleteLater();
+    });
+    watcher->setFuture(future);
+}
+
 void InstallController::removeApiConfig(const int serverIndex)
 {
     m_serversModel->removeApiConfig(serverIndex);

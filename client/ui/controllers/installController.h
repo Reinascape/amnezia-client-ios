@@ -40,6 +40,7 @@ public slots:
     void setContainerEnabled(DockerContainer container, bool enabled);
     void refreshContainerStatus(DockerContainer container);
     void refreshMtProxyDiagnostics(int port);
+    void fetchMtProxySecret();
 
     void removeApiConfig(const int serverIndex);
 
@@ -78,6 +79,7 @@ signals:
     void mtProxyDiagnosticsRefreshed(bool portReachable, bool telegramReachable,
                                      int clientsConnected, const QString &lastConfigRefresh,
                                      const QString &statsEndpoint);
+    void mtProxySecretFetched(const QString &secret);
 
     void installationErrorOccurred(ErrorCode errorCode);
     void wrongInstallationUser(const QString &message);
