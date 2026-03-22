@@ -714,10 +714,16 @@ QString ServerController::fetchContainerSecret(const ServerCredentials &credenti
             stdOut += data;
             return ErrorCode::NoError;
         };
-        runScript(credentials, "sudo docker exec amnezia-mtproxy cat /data/secret", cbReadStdOut);
+        ErrorCode errorCode = runScript(credentials, "sudo docker exec amnezia-mtproxy cat /data/secret", cbReadStdOut);
+        if (errorCode != ErrorCode::NoError) {
+            return QString();
+        }
+
         return stdOut.trimmed();
     }
-    default: return QString();
+    default: {
+        return QString();
+    }
     }
 }
 
