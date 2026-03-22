@@ -835,55 +835,66 @@ void InstallController::removeProcessedContainer()
 
 void InstallController::setContainerEnabled(DockerContainer container, bool enabled)
 {
-    int serverIndex = m_serversModel->getProcessedServerIndex();
-    ServerCredentials serverCredentials =
-            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+    switch (container) {
+    case ContainerEnumNS::MtProxy: {
+        int serverIndex = m_serversModel->getProcessedServerIndex();
+        ServerCredentials serverCredentials =
+                qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
 
-    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
-    connect(serverController.get(), &ServerController::serverIsBusy, this, &InstallController::serverIsBusy);
-    connect(this, &InstallController::cancelInstallation, serverController.get(), &ServerController::cancelInstallation);
+        QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+        connect(serverController.get(), &ServerController::serverIsBusy, this, &InstallController::serverIsBusy);
+        connect(this, &InstallController::cancelInstallation, serverController.get(),
+                &ServerController::cancelInstallation);
 
-    emit serverIsBusy(true);
+        emit serverIsBusy(true);
 
-    QFuture<ErrorCode> future = QtConcurrent::run([serverController, serverCredentials, container, enabled]() mutable {
-        return enabled
-            ? serverController->startContainer(serverCredentials, container)
-            : serverController->stopContainer(serverCredentials, container);
-    });
+        QFuture<ErrorCode> future =
+                QtConcurrent::run([serverController, serverCredentials, container, enabled]() mutable {
+                    return enabled ? serverController->startContainer(serverCredentials, container)
+                                   : serverController->stopContainer(serverCredentials, container);
+                });
 
-    auto *watcher = new QFutureWatcher<ErrorCode>(this);
-    connect(watcher, &QFutureWatcher<ErrorCode>::finished, this, [this, watcher, enabled]() {
-        emit serverIsBusy(false);
-        ErrorCode errorCode = watcher->result();
-        if (errorCode == ErrorCode::NoError) {
-            emit setContainerEnabledFinished(enabled);
-        } else {
-            emit installationErrorOccurred(errorCode);
-        }
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
+        auto *watcher = new QFutureWatcher<ErrorCode>(this);
+        connect(watcher, &QFutureWatcher<ErrorCode>::finished, this, [this, watcher, enabled]() {
+            emit serverIsBusy(false);
+            ErrorCode errorCode = watcher->result();
+            if (errorCode == ErrorCode::NoError) {
+                emit setContainerEnabledFinished(enabled);
+            } else {
+                emit installationErrorOccurred(errorCode);
+            }
+            watcher->deleteLater();
+        });
+        watcher->setFuture(future);
+        break;
+    }
+    }
 }
 
 void InstallController::refreshContainerStatus(DockerContainer container)
 {
-    int serverIndex = m_serversModel->getProcessedServerIndex();
-    ServerCredentials serverCredentials =
-            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
+    switch (container) {
+    case ContainerEnumNS::MtProxy: {
+        int serverIndex = m_serversModel->getProcessedServerIndex();
+        ServerCredentials serverCredentials =
+                qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
 
-    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
+        QSharedPointer<ServerController> serverController(new ServerController(m_settings));
 
-    QFuture<int> future = QtConcurrent::run([serverController, serverCredentials, container]() mutable {
-        ServerController::ContainerStatus status = serverController->getContainerStatus(serverCredentials, container);
-        return static_cast<int>(status);
-    });
+        QFuture<int> future = QtConcurrent::run([serverController, serverCredentials, container]() mutable {
+            ServerController::ContainerStatus status = serverController->getContainerStatus(serverCredentials, container);
+            return static_cast<int>(status);
+        });
 
-    auto *watcher = new QFutureWatcher<int>(this);
-    connect(watcher, &QFutureWatcher<int>::finished, this, [this, watcher]() {
-        emit containerStatusRefreshed(watcher->result());
-        watcher->deleteLater();
-    });
-    watcher->setFuture(future);
+        auto *watcher = new QFutureWatcher<int>(this);
+        connect(watcher, &QFutureWatcher<int>::finished, this, [this, watcher]() {
+            emit containerStatusRefreshed(watcher->result());
+            watcher->deleteLater();
+        });
+        watcher->setFuture(future);
+        break;
+    }
+    }
 }
 
 void InstallController::refreshContainerDiagnostics(DockerContainer container, int port)
@@ -909,6 +920,7 @@ void InstallController::refreshContainerDiagnostics(DockerContainer container, i
             watcher->deleteLater();
         });
         watcher->setFuture(future);
+        break;
     }
     default: {
         break;
@@ -939,6 +951,7 @@ void InstallController::fetchContainerSecret(DockerContainer container)
             watcher->deleteLater();
         });
         watcher->setFuture(future);
+        break;
     }
     default: {
         break;

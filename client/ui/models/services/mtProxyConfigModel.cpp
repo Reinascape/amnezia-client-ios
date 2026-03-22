@@ -224,8 +224,9 @@ void MtProxyConfigModel::setSecret(const QString &secret)
 bool MtProxyConfigModel::validateAndSetSecret(const QString &rawSecret)
 {
     // Validate: must be exactly 32 hex chars
-    if (!QRegularExpression("^[0-9a-fA-F]{32}$").match(rawSecret).hasMatch())
+    if (!QRegularExpression("^[0-9a-fA-F]{32}$").match(rawSecret).hasMatch()) {
         return false;
+    }
     setData(index(0), rawSecret, SecretRole);
     return true;
 }

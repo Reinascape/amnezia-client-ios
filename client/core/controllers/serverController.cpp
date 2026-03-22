@@ -608,8 +608,7 @@ ServerController::ContainerStatus ServerController::getContainerStatus(const Ser
                                                                        DockerContainer container)
 {
     switch (container) {
-    case amnezia::ContainerEnumNS::MtProxy: {
-    }
+    case ContainerEnumNS::MtProxy: {
         QString stdOut;
         auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
             stdOut += data;
@@ -636,6 +635,7 @@ ServerController::ContainerStatus ServerController::getContainerStatus(const Ser
         if (stdOut == "exited" || stdOut == "created" || stdOut == "paused") {
             return ContainerStatus::Stopped;
         }
+    }
     }
 
     return ContainerStatus::Error;
@@ -691,8 +691,9 @@ ServerController::ContainerDiagnostics ServerController::getContainerDiagnostics
                 diag.clientsConnected = line.mid(8).trimmed().toInt();
             } else if (line.startsWith("CONF_TIME=")) {
                 diag.lastConfigRefresh = line.mid(10).trimmed();
-            } else if (line.startsWith("STATS="))
+            } else if (line.startsWith("STATS=")) {
                 diag.statsEndpoint = line.mid(6).trimmed();
+            }
         }
         break;
     }
