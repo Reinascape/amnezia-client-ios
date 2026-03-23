@@ -316,15 +316,6 @@ ErrorCode ServerController::updateContainer(const ServerCredentials &credentials
     }
 }
 
-ErrorCode ServerController::restartContainer(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config)
-{
-    QString restartScript = amnezia::scriptData(ProtocolScriptType::container_restart, container);
-    if (!restartScript.isEmpty()) {
-        return restartContainerWorker(credentials, container, config);
-    }
-    return ErrorCode::NoError;
-}
-
 bool ServerController::isReinstallContainerRequired(DockerContainer container, const QJsonObject &oldConfig, const QJsonObject &newConfig)
 {
     Proto mainProto = ContainerProps::defaultProtocol(container);
@@ -564,13 +555,6 @@ ErrorCode ServerController::configureContainerWorker(const ServerCredentials &cr
     VpnConfigurationsController::updateContainerConfigAfterInstallation(container, config, stdOut);
 
     return e;
-}
-
-ErrorCode ServerController::restartContainerWorker(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config)
-{
-    return runScript(credentials,
-                     replaceVars(amnezia::scriptData(ProtocolScriptType::container_restart, container),
-                                 genVarsForScript(credentials, container, config)));
 }
 
 ErrorCode ServerController::startupContainerWorker(const ServerCredentials &credentials, DockerContainer container, const QJsonObject &config)

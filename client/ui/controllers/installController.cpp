@@ -755,29 +755,6 @@ void InstallController::updateContainer(QJsonObject config, bool closePage)
     emit installationErrorOccurred(errorCode);
 }
 
-void InstallController::restartContainer(QJsonObject config)
-{
-    int serverIndex = m_serversModel->getProcessedServerIndex();
-    ServerCredentials serverCredentials =
-            qvariant_cast<ServerCredentials>(m_serversModel->data(serverIndex, ServersModel::Roles::CredentialsRole));
-
-    const DockerContainer container = ContainerProps::containerFromString(config.value(config_key::container).toString());
-
-    QSharedPointer<ServerController> serverController(new ServerController(m_settings));
-    connect(serverController.get(), &ServerController::serverIsBusy, this, &InstallController::serverIsBusy);
-    connect(this, &InstallController::cancelInstallation, serverController.get(), &ServerController::cancelInstallation);
-
-    ErrorCode errorCode = serverController->restartContainer(serverCredentials, container, config);
-    clearCachedProfile(serverController);
-
-    if (errorCode == ErrorCode::NoError) {
-        emit restartContainerFinished(tr("Container restarted successfully"));
-        return;
-    }
-
-    emit installationErrorOccurred(errorCode);
-}
-
 void InstallController::rebootProcessedServer()
 {
     int serverIndex = m_serversModel->getProcessedServerIndex();
