@@ -116,7 +116,6 @@
         <file>server_scripts/mtproxy/configure_container.sh</file>
         <file>server_scripts/mtproxy/Dockerfile</file>
         <file>server_scripts/mtproxy/run_container.sh</file>
-        <file>server_scripts/mtproxy/restart_container.sh</file>
         <file>server_scripts/mtproxy/start.sh</file>
         <file>server_scripts/website_tor/configure_container.sh</file>
         <file>server_scripts/website_tor/Dockerfile</file>

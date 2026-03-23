@@ -949,6 +949,9 @@ PageType {
                     textField.text: tlsDomain
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
+                        if (textField.text === "") {
+                            textField.text = MtProxyConfigModel.defaultTlsDomain()
+                        }
                         if (textField.text !== tlsDomain) {
                             tlsDomain = textField.text
                             MtProxyConfigModel.setTlsDomain(tlsDomain)

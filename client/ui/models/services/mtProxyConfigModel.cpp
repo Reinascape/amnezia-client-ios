@@ -121,7 +121,7 @@ QVariant MtProxyConfigModel::data(const QModelIndex &index, int role) const
                 .toString(protocols::mtProxy::transportModeStandard);
     }
     case Roles::TlsDomainRole: {
-        return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString(protocols::mtProxy::defaultTlsDomain);
+        return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString();
     }
     case Roles::AdditionalSecretsRole: {
         QJsonArray arr = m_protocolConfig.value(protocols::mtProxy::additionalSecretsKey).toArray();
@@ -147,6 +147,7 @@ QVariant MtProxyConfigModel::data(const QModelIndex &index, int role) const
         return m_protocolConfig.value(protocols::mtProxy::natExternalIpKey).toString();
     }
     }
+
 
     return QVariant();
 }
@@ -258,7 +259,8 @@ QString MtProxyConfigModel::getTransportMode() const
 
 QString MtProxyConfigModel::getTlsDomain() const
 {
-    return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString(protocols::mtProxy::defaultTlsDomain);
+    return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey)
+            .toString(protocols::mtProxy::defaultTlsDomain);
 }
 
 QString MtProxyConfigModel::getPublicHost() const

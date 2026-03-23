@@ -48,7 +48,6 @@ QString amnezia::scriptName(ProtocolScriptType type)
     case ProtocolScriptType::run_container: return QLatin1String("run_container.sh");
     case ProtocolScriptType::configure_container: return QLatin1String("configure_container.sh");
     case ProtocolScriptType::container_startup: return QLatin1String("start.sh");
-    case ProtocolScriptType::container_restart: return QLatin1String("restart_container.sh");
     case ProtocolScriptType::openvpn_template: return QLatin1String("template.ovpn");
     case ProtocolScriptType::wireguard_template: return QLatin1String("template.conf");
     case ProtocolScriptType::awg_template: return QLatin1String("template.conf");
