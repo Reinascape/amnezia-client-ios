@@ -755,7 +755,6 @@ PageType {
                         top: 65535
                     }
                     Component.onCompleted: {
-                        // Set text only on initial load, don't bind
                         var savedPort = port
                         textField.text = (savedPort === MtProxyConfigModel.defaultPort()) ? "" : savedPort
                     }
@@ -869,7 +868,6 @@ PageType {
                     headerText: qsTr("FakeTLS domain")
                     textField.placeholderText: root.previousTlsDomain
                     Component.onCompleted: {
-                        // Set text only on initial load, don't bind
                         var savedDomain = tlsDomain
                         textField.text = (savedDomain === MtProxyConfigModel.defaultTlsDomain() || savedDomain === "") ? "" : savedDomain
                     }
