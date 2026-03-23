@@ -18,7 +18,6 @@ import "../Components"
 PageType {
     id: root
 
-    // 0 = NotDeployed, 1 = Running, 2 = Stopped, 3 = Error
     property int containerStatus: 1
     property bool isUpdating: false
     property bool isCheckingStatus: false
@@ -36,8 +35,6 @@ PageType {
     property string previousNatInternalIp: ""
     property string previousNatExternalIp: ""
 
-    // savedTransportMode reflects the deployed config (not live Settings values)
-    // Updated only after successful Save. Used by Connection tab.
     property string savedTransportMode: ""
     property string savedTlsDomain: ""
     property string savedPublicHost: ""
@@ -46,11 +43,10 @@ PageType {
         if (savedTransportMode === "faketls") {
             root.syncedSecretTabIndex = 2
         } else if (savedTransportMode !== "") {
-            root.syncedSecretTabIndex = 0  // default to Standard
+            root.syncedSecretTabIndex = 0
         }
     }
 
-    // Diagnostics
     property bool diagLoading: false
     property int syncedSecretTabIndex: 0
     property bool pendingEnableAfterRestart: false
@@ -90,7 +86,7 @@ PageType {
     Component.onCompleted: {
         isCheckingStatus = true
         InstallController.refreshContainerStatus(ContainerEnum.MtProxy)
-        // Initialize saved* from the deployed config
+
         root.savedTransportMode = MtProxyConfigModel.getTransportMode()
         root.savedTlsDomain = MtProxyConfigModel.getTlsDomain()
         root.savedPublicHost = MtProxyConfigModel.getPublicHost()
@@ -130,7 +126,6 @@ PageType {
         function onSetContainerEnabledFinished(enabled) {
             if (enabled && pendingUpdateAfterEnable) {
                 pendingUpdateAfterEnable = false
-                // Container is now running — apply latest config with new secret
                 InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
                 return
             }
@@ -143,13 +138,12 @@ PageType {
         function onContainerStatusRefreshed(status) {
             isCheckingStatus = false
             containerStatus = status
-            // Refresh saved* now that model is fully loaded
+
             root.savedTransportMode = MtProxyConfigModel.getTransportMode()
             root.savedTlsDomain = MtProxyConfigModel.getTlsDomain()
             root.savedPublicHost = MtProxyConfigModel.getPublicHost()
             if (status === 1) {
                 MtProxyConfigModel.setEnabled(true)
-                // Fetch active secret from server to sync local config
                 InstallController.fetchContainerSecret(ContainerEnum.MtProxy)
             } else if (status === 2) {
                 MtProxyConfigModel.setEnabled(false)
@@ -166,12 +160,9 @@ PageType {
         }
 
         function onContainerSecretFetched(secret) {
-            // Validation and model update happens in the model
             MtProxyConfigModel.validateAndSetSecret(secret)
         }
     }
-
-    // ── Back button ──────────────────────────────────────────────────────────
 
     BackButtonType {
         id: backButton
@@ -183,8 +174,6 @@ PageType {
             if (this.activeFocus) connectionListView.positionViewAtBeginning()
         }
     }
-
-    // ── Page header: title + enable switch + tabs ────────────────────────────
 
     ColumnLayout {
         id: pageHeader
@@ -239,8 +228,6 @@ PageType {
         }
     }
 
-    // ── Tab content ──────────────────────────────────────────────────────────
-
     StackLayout {
         id: tabContent
         anchors.top: pageHeader.bottom
@@ -249,10 +236,6 @@ PageType {
         anchors.right: parent.right
         currentIndex: mainTabBar.currentIndex
 
-        // ════════════════════════════════════════════════════════════════════
-        // CONNECTION TAB
-        // ════════════════════════════════════════════════════════════════════
-
         ListViewType {
             id: connectionListView
             model: MtProxyConfigModel
@@ -260,8 +243,6 @@ PageType {
             delegate: ColumnLayout {
                 width: connectionListView.width
                 spacing: 0
-
-                // ── helpers ──────────────────────────────────────────────
 
                 function domainToHex(domain) {
                     var hex = ""
@@ -310,8 +291,6 @@ PageType {
                     return "tg://proxy?server=" + effectiveHost() + "&port=" + port + "&secret=" + activeSecret()
                 }
 
-                // ── Telegram link ─────────────────────────────────────────
-
                 CaptionTextType {
                     Layout.fillWidth: true
                     Layout.topMargin: 24
@@ -359,15 +338,9 @@ PageType {
                             imageColor: AmneziaStyle.color.paleGray
                             visible: secret !== ""
                             onClicked: {
-                                // Вариант 1: fullscreen overlay (текущий)
                                 qrOverlay.qrSource = MtProxyConfigModel.generateQrCode(tmeLink())
                                 qrOverlay.linkUrl = tmeLink()
                                 qrOverlay.visible = true
-
-                                // Вариант 2: DrawerType2 снизу (закомментирован)
-                                // qrDrawer.qrSource = MtProxyConfigModel.generateQrCode(tmeLink())
-                                // qrDrawer.linkUrl = tmeLink()
-                                // qrDrawer.openTriggered()
                             }
                         }
 
@@ -386,7 +359,6 @@ PageType {
                     }
                 }
 
-                // tg:// link
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
@@ -444,8 +416,6 @@ PageType {
                     }
                 }
 
-                // ── Manual details ────────────────────────────────────────
-
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
@@ -493,7 +463,6 @@ PageType {
                         anchors.topMargin: 8
                         spacing: 0
 
-                        // Host
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
@@ -529,7 +498,6 @@ PageType {
                             Layout.fillWidth: true
                         }
 
-                        // Port
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
@@ -565,7 +533,6 @@ PageType {
                             Layout.fillWidth: true
                         }
 
-                        // Secret tabs: Standard / Padded / FakeTLS
                         ButtonGroup {
                             id: secretTabGroup
                         }
@@ -604,7 +571,6 @@ PageType {
                             }
                         }
 
-                        // Secret value + copy
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
@@ -640,8 +606,6 @@ PageType {
                     }
                 }
 
-                // ── Delete ────────────────────────────────────────────────
-
                 LabelWithButtonType {
                     id: removeButton
                     Layout.fillWidth: true
@@ -672,10 +636,6 @@ PageType {
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════
-        // SETTINGS TAB
-        // ════════════════════════════════════════════════════════════════════
-
         ListViewType {
             id: settingsListView
             model: MtProxyConfigModel
@@ -685,7 +645,6 @@ PageType {
                 width: settingsListView.width
                 spacing: 0
 
-                // ── Enable MTProxy ────────────────────────────────────────
                 SwitcherType {
                     id: enableMtProxySwitch
                     Layout.fillWidth: true
@@ -704,7 +663,6 @@ PageType {
                             isEnabled = checked
                             isUpdating = true
                             if (checked) {
-                                // Start container first, then apply latest config (incl. new secret)
                                 root.pendingUpdateAfterEnable = true
                                 InstallController.setContainerEnabled(ContainerEnum.MtProxy, true)
                             } else {
@@ -714,7 +672,6 @@ PageType {
                     }
                 }
 
-                // ── Base secret ───────────────────────────────────────────
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 16
@@ -756,12 +713,10 @@ PageType {
                                     qsTr("Cancel"),
                                         function () {
                                         if (containerStatus === 1) {
-                                            // Running — apply immediately
                                             isUpdating = true
                                             MtProxyConfigModel.generateSecret()
                                             InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
                                         } else {
-                                            // Stopped — save locally, apply on next enable
                                             MtProxyConfigModel.generateSecret()
                                             PageController.showNotificationMessage(qsTr("New secret saved. It will be applied when MTProxy is started."))
                                         }
@@ -774,7 +729,6 @@ PageType {
                     }
                 }
 
-                // ── Public host / IP ──────────────────────────────────────
                 TextFieldWithHeaderType {
                     id: publicHostTextField
                     Layout.fillWidth: true
@@ -818,7 +772,6 @@ PageType {
                     wrapMode: Text.WordWrap
                 }
 
-                // ── Server port ───────────────────────────────────────────
                 TextFieldWithHeaderType {
                     id: portTextField
                     Layout.fillWidth: true
@@ -826,17 +779,22 @@ PageType {
                     Layout.rightMargin: 16
                     Layout.bottomMargin: 16
                     headerText: qsTr("Server port")
-                    textField.placeholderText: "443"
-                    textField.text: port
+                    textField.placeholderText: MtProxyConfigModel.defaultPort()
                     textField.maximumLength: 5
                     textField.validator: IntValidator {
                         bottom: 1
                         top: 65535
                     }
+                    Component.onCompleted: {
+                        // Set text only on initial load, don't bind
+                        var savedPort = port
+                        textField.text = (savedPort === MtProxyConfigModel.defaultPort()) ? "" : savedPort
+                    }
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text !== port) {
-                            port = textField.text
+                        var portValue = textField.text === "" ? MtProxyConfigModel.defaultPort() : textField.text
+                        if (portValue !== port) {
+                            port = portValue
                             MtProxyConfigModel.setPort(port)
                         }
                     }
@@ -854,7 +812,6 @@ PageType {
                     wrapMode: Text.WordWrap
                 }
 
-                // ── Promoted channel tag ──────────────────────────────────
                 TextFieldWithHeaderType {
                     id: tagTextField
                     Layout.fillWidth: true
@@ -898,7 +855,6 @@ PageType {
                     }
                 }
 
-                // ── Transport mode dropdown ───────────────────────────────
                 DropDownType {
                     id: transportModeDropDown
                     Layout.fillWidth: true
@@ -927,8 +883,6 @@ PageType {
                                 clickedFunction: function () {
                                     transportMode = (index === 0) ? "standard" : "faketls"
                                     MtProxyConfigModel.setTransportMode(transportMode)
-                                    // Note: syncedSecretTabIndex is NOT updated here —
-                                    // Connection tab reflects saved config only, not live Settings
                                     transportModeDropDown.closeTriggered()
                                 }
                             }
@@ -936,7 +890,6 @@ PageType {
                     }
                 }
 
-                // ── FakeTLS domain ────────────────────────────────────────
                 TextFieldWithHeaderType {
                     id: tlsDomainTextField
                     Layout.fillWidth: true
@@ -946,14 +899,16 @@ PageType {
                     visible: transportMode === "faketls"
                     headerText: qsTr("FakeTLS domain")
                     textField.placeholderText: root.previousTlsDomain
-                    textField.text: tlsDomain
+                    Component.onCompleted: {
+                        // Set text only on initial load, don't bind
+                        var savedDomain = tlsDomain
+                        textField.text = (savedDomain === MtProxyConfigModel.defaultTlsDomain() || savedDomain === "") ? "" : savedDomain
+                    }
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
-                        if (textField.text === "") {
-                            textField.text = MtProxyConfigModel.defaultTlsDomain()
-                        }
-                        if (textField.text !== tlsDomain) {
-                            tlsDomain = textField.text
+                        var domainValue = textField.text === "" ? MtProxyConfigModel.defaultTlsDomain() : textField.text
+                        if (domainValue !== tlsDomain) {
+                            tlsDomain = domainValue
                             MtProxyConfigModel.setTlsDomain(tlsDomain)
                         }
                     }
@@ -983,7 +938,6 @@ PageType {
                     }
                 }
 
-                // ── Advanced (collapsible) ────────────────────────────────
                 LabelWithButtonType {
                     id: advancedHeader
                     Layout.fillWidth: true
@@ -1005,7 +959,6 @@ PageType {
                     spacing: 0
                     visible: advancedHeader.expanded
 
-                    // Additional secrets
                     CaptionTextType {
                         Layout.fillWidth: true
                         Layout.leftMargin: 16
@@ -1078,7 +1031,6 @@ PageType {
                         }
                     }
 
-                    // Workers
                     DividerType {
                         Layout.fillWidth: true
                         Layout.bottomMargin: 8
@@ -1155,7 +1107,6 @@ PageType {
                         }
                     }
 
-                    // NAT settings
                     DividerType {
                         Layout.fillWidth: true
                         Layout.bottomMargin: 8
@@ -1216,13 +1167,11 @@ PageType {
                     }
                 }
 
-                // ── Line ──────────────────────────────────────────────────
                 DividerType {
                     Layout.fillWidth: true
                     Layout.topMargin: 8
                 }
 
-                // ── Diagnostics ───────────────────────────────────────────
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.topMargin: 16
@@ -1357,7 +1306,6 @@ PageType {
                     }
                 }
 
-                // ── Warning ───────────────────────────────────────────────
                 CaptionTextType {
                     Layout.fillWidth: true
                     Layout.leftMargin: 16
@@ -1370,7 +1318,6 @@ PageType {
                     font.pixelSize: 12
                 }
 
-                // ── Save ──────────────────────────────────────────────────
                 BasicButtonType {
                     Layout.fillWidth: true
                     Layout.topMargin: 16
@@ -1380,18 +1327,22 @@ PageType {
                     visible: ServersModel.isProcessedServerHasWriteAccess()
                     text: qsTr("Save")
                     clickedFunc: function () {
-                        if (!portTextField.textField.acceptableInput) {
+                        var portValue = portTextField.textField.text === ""
+                            ? MtProxyConfigModel.defaultPort()
+                            : portTextField.textField.text
+                        if (!portTextField.textField.acceptableInput && portTextField.textField.text !== "") {
                             portTextField.errorText = qsTr("The port must be in the range of 1 to 65535")
                             return
                         }
-                        // Force sync all fields to model before saving
-                        // (onEditingFinished may not have fired if user didn't blur the field)
-                        MtProxyConfigModel.setPort(portTextField.textField.text)
+                        MtProxyConfigModel.setPort(portValue)
                         MtProxyConfigModel.setTag(tagTextField.textField.text)
                         MtProxyConfigModel.setPublicHost(publicHostTextField.textField.text)
                         MtProxyConfigModel.setTransportMode(transportMode)
-                        MtProxyConfigModel.setTlsDomain(tlsDomainTextField.textField.text)
-                        // FakeTLS requires workers=0
+                        var domainValue = tlsDomainTextField.textField.text === ""
+                            ? MtProxyConfigModel.defaultTlsDomain()
+                            : tlsDomainTextField.textField.text
+                        MtProxyConfigModel.setTlsDomain(domainValue)
+
                         if (transportMode === "faketls") {
                             workers = "0"
                             MtProxyConfigModel.setWorkers("0")
@@ -1421,105 +1372,6 @@ PageType {
         }
     }
 
-    // ── QR overlay ────────────────────────────────────────────────────────────
-
-    // ==========================================================================
-    // Вариант 2: DrawerType2 (выезжает снизу) — раскомментировать для использования,
-    // и закомментировать Вариант 1 ниже и onClicked выше
-    // ==========================================================================
-    /*
-    DrawerType2 {
-        id: qrDrawer
-        parent: root
-        anchors.fill: parent
-        expandedHeight: root.height * 0.9
-
-        property string qrSource: ""
-        property string linkUrl: ""
-
-        expandedStateContent: ColumnLayout {
-            width: qrDrawer.width
-            spacing: 0
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 16
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-
-                Header2Type {
-                    Layout.fillWidth: true
-                    headerText: qsTr("Telegram connection link")
-                }
-                ImageButtonType {
-                    implicitWidth: 36
- implicitHeight: 36
-                    hoverEnabled: true
-                    image: "qrc:/images/controls/close.svg"
-                    imageColor: AmneziaStyle.color.paleGray
-                    onClicked: qrDrawer.closeTriggered()
-                }
-            }
-
-            BasicButtonType {
-                Layout.fillWidth: true
-                Layout.topMargin: 24
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-                text: qsTr("Share")
-                leftImageSource: "qrc:/images/controls/share-2.svg"
-                clickedFunc: function () { Qt.openUrlExternally(qrDrawer.linkUrl) }
-            }
-
-            BasicButtonType {
-                Layout.fillWidth: true
-                Layout.topMargin: 12
-                Layout.leftMargin: 16
-                Layout.rightMargin: 16
-                text: qsTr("Copy")
-                leftImageSource: "qrc:/images/controls/copy.svg"
-                clickedFunc: function () {
-                    GC.copyToClipBoard(qrDrawer.linkUrl)
-                    PageController.showNotificationMessage(qsTr("Copied"))
-                    qrDrawer.closeTriggered()
-                }
-            }
-
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 24
-                width: 220
- height: 220
-                color: "white"
-                radius: 8
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    smooth: false
-                    fillMode: Image.PreserveAspectFit
-                    source: qrDrawer.qrSource
-                }
-            }
-
-            CaptionTextType {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 16
-                Layout.leftMargin: 32
-                Layout.rightMargin: 32
-                Layout.bottomMargin: 24
-                text: qsTr("Scan with your camera to add proxy to Telegram")
-                color: AmneziaStyle.color.mutedGray
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
-        }
-    }
-    */
-
-    // ==========================================================================
-    // Вариант 1: fullscreen overlay (текущий)
-    // ==========================================================================
-
     Rectangle {
         id: qrOverlay
         anchors.fill: parent
@@ -1530,13 +1382,11 @@ PageType {
         property string qrSource: ""
         property string linkUrl: ""
 
-        // Dim background tap to close
         MouseArea {
             anchors.fill: parent
             onClicked: qrOverlay.visible = false
         }
 
-        // Close button — top right, outside panel
         ImageButtonType {
             anchors.top: parent.top
             anchors.right: parent.right
@@ -1551,7 +1401,6 @@ PageType {
             onClicked: qrOverlay.visible = false
         }
 
-        // Panel
         Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -1569,7 +1418,6 @@ PageType {
                 color: AmneziaStyle.color.onyxBlack
             }
 
-            // Prevent tap-through to dim background
             MouseArea {
                 anchors.fill: parent
             }
@@ -1581,7 +1429,6 @@ PageType {
                 anchors.top: parent.top
                 spacing: 0
 
-                // Title
                 Header2Type {
                     Layout.fillWidth: true
                     Layout.topMargin: 24
@@ -1590,7 +1437,6 @@ PageType {
                     headerText: qsTr("Telegram connection link")
                 }
 
-                // Share
                 BasicButtonType {
                     Layout.fillWidth: true
                     Layout.topMargin: 24
@@ -1603,7 +1449,6 @@ PageType {
                     }
                 }
 
-                // Copy
                 BasicButtonType {
                     Layout.fillWidth: true
                     Layout.topMargin: 12
@@ -1618,7 +1463,6 @@ PageType {
                     }
                 }
 
-                // QR code
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 24
@@ -1636,7 +1480,6 @@ PageType {
                     }
                 }
 
-                // Caption
                 CaptionTextType {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 16
@@ -1651,8 +1494,6 @@ PageType {
             }
         }
     }
-
-    // ── Loading overlay ──────────────────────────────────────────────────────
 
     Rectangle {
         anchors.top: pageHeader.bottom
