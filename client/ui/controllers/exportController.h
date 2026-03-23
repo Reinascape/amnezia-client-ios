@@ -21,6 +21,7 @@ public:
     Q_PROPERTY(QString nativeConfigString READ getNativeConfigString NOTIFY exportConfigChanged)
 
 public slots:
+    void generateQrFromString(const QString &text);
     void generateFullAccessConfig();
     void generateConnectionConfig(const QString &clientName);
     void generateOpenVpnConfig(const QString &clientName);

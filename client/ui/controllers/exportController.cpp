@@ -25,6 +25,14 @@ ExportController::ExportController(const QSharedPointer<ServersModel> &serversMo
 {
 }
 
+void ExportController::generateQrFromString(const QString &text)
+{
+    clearPreviousConfig();
+    m_config = text;
+    m_qrCodes = qrCodeUtils::generateQrCodeImageSeries(text.toUtf8());
+    emit exportConfigChanged();
+}
+
 void ExportController::generateFullAccessConfig()
 {
     clearPreviousConfig();

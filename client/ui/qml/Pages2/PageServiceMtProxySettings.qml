@@ -338,9 +338,11 @@ PageType {
                             imageColor: AmneziaStyle.color.paleGray
                             visible: secret !== ""
                             onClicked: {
-                                qrDrawer.qrSource = MtProxyConfigModel.generateQrCode(tmeLink())
-                                qrDrawer.linkUrl = tmeLink()
-                                qrDrawer.openTriggered()
+                                ExportController.generateQrFromString(tmeLink())
+                                PageController.goToShareConnectionPage(
+                                    qsTr("Telegram connection link"),
+                                    qsTr("MTProxy connection link"),
+                                    "", "", "")
                             }
                         }
 
@@ -396,9 +398,11 @@ PageType {
                             image: "qrc:/images/controls/qr-code.svg"
                             imageColor: AmneziaStyle.color.paleGray
                             onClicked: {
-                                qrDrawer.qrSource = MtProxyConfigModel.generateQrCode(tgLink())
-                                qrDrawer.linkUrl = tgLink()
-                                qrDrawer.openTriggered()
+                                ExportController.generateQrFromString(tgLink())
+                                PageController.goToShareConnectionPage(
+                                    qsTr("Telegram connection link"),
+                                    qsTr("MTProxy connection link"),
+                                    "", "", "")
                             }
                         }
 
