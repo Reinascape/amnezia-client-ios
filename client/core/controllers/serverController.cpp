@@ -625,13 +625,12 @@ ServerController::ContainerStatus ServerController::getContainerStatus(const Ser
     return ContainerStatus::Error;
 }
 
-ServerController::ContainerDiagnostics ServerController::getContainerDiagnostics(const ServerCredentials &credentials,
-                                                                                 DockerContainer container, int port)
+std::shared_ptr<ContainerDiagnostics> ServerController::getContainerDiagnostics(const ServerCredentials &credentials,
+                                                                                DockerContainer container, int port)
 {
-    ContainerDiagnostics diag;
-
     switch (container) {
     case DockerContainer::MtProxy: {
+        auto diag = std::make_unique<MtProxyDiagnostics>();
         // Single script — runs all checks and outputs labeled lines
         QString script =
                 QString(
@@ -654,6 +653,7 @@ ServerController::ContainerDiagnostics ServerController::getContainerDiagnostics
                         "echo \"CONF_TIME=${CONF_TIME}\"; "
                         "echo \"STATS=http://localhost:2398/stats\";")
                         .arg(port);
+
         QString stdOut;
         auto cbReadStdOut = [&](const QString &data, libssh::Client &) {
             stdOut += data;
@@ -665,28 +665,26 @@ ServerController::ContainerDiagnostics ServerController::getContainerDiagnostics
             return diag;
         }
 
-        diag.available = true;
+        diag->available = true;
         for (const QString &line : stdOut.split("\n")) {
             if (line.startsWith("PORT_OK=")) {
-                diag.portReachable = line.mid(8).trimmed() == "yes";
+                diag->portReachable = line.mid(8).trimmed() == "yes";
             } else if (line.startsWith("TG_OK=")) {
-                diag.upstreamReachable = line.mid(6).trimmed() == "yes";
+                diag->upstreamReachable = line.mid(6).trimmed() == "yes";
             } else if (line.startsWith("CLIENTS=")) {
-                diag.clientsConnected = line.mid(8).trimmed().toInt();
+                diag->clientsConnected = line.mid(8).trimmed().toInt();
             } else if (line.startsWith("CONF_TIME=")) {
-                diag.lastConfigRefresh = line.mid(10).trimmed();
+                diag->lastConfigRefresh = line.mid(10).trimmed();
             } else if (line.startsWith("STATS=")) {
-                diag.statsEndpoint = line.mid(6).trimmed();
+                diag->statsEndpoint = line.mid(6).trimmed();
             }
         }
-        break;
+        return diag;
     }
-    default: { // Diagnostics not implemented for this container
-        break;
+    default: {
+        return std::make_unique<ContainerDiagnostics>();
     }
     }
-
-    return diag;
 }
 
 QString ServerController::fetchContainerSecret(const ServerCredentials &credentials, DockerContainer container)

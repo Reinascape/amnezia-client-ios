@@ -1,11 +1,14 @@
 #ifndef SERVERCONTROLLER_H
 #define SERVERCONTROLLER_H
 
+#include <memory>
 #include <QJsonObject>
 #include <QObject>
 
 #include "containers/containers_defs.h"
 #include "core/defs.h"
+#include "core/diagnostics/containerDiagnostics.h"
+#include "core/diagnostics/mtProxyDiagnostics.h"
 #include "core/sshclient.h"
 
 class Settings;
@@ -43,17 +46,8 @@ public:
     };
     ContainerStatus getContainerStatus(const ServerCredentials &credentials, DockerContainer container);
 
-    struct ContainerDiagnostics
-    {
-        bool portReachable = false;
-        bool upstreamReachable = false; // telegramReachable for MtProxy, or generic upstream
-        int clientsConnected = -1;
-        QString lastConfigRefresh;
-        QString statsEndpoint;
-        bool available = false;
-    };
-    ContainerDiagnostics getContainerDiagnostics(const ServerCredentials &credentials, DockerContainer container,
-                                                 int port = 0);
+    std::shared_ptr<ContainerDiagnostics> getContainerDiagnostics(const ServerCredentials &credentials,
+                                                                  DockerContainer container, int port = 0);
     QString fetchContainerSecret(const ServerCredentials &credentials, DockerContainer container);
     ErrorCode uploadTextFileToContainer(DockerContainer container, const ServerCredentials &credentials, const QString &file,
                                         const QString &path,
@@ -107,7 +101,7 @@ signals:
     void serverIsBusy(const bool isBusy);
 };
 
-Q_DECLARE_METATYPE(ServerController::ContainerDiagnostics)
+
 
 #endif // SERVERCONTROLLER_H
 

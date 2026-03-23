@@ -9,6 +9,8 @@
 #include <QStandardPaths>
 #include <QtConcurrent>
 
+#include "core/diagnostics/mtProxyDiagnostics.h"
+
 #include "core/api/apiUtils.h"
 #include "core/controllers/serverController.h"
 #include "core/controllers/vpnConfigurationController.h"
@@ -884,16 +886,19 @@ void InstallController::refreshContainerDiagnostics(DockerContainer container, i
 
         QSharedPointer<ServerController> serverController(new ServerController(m_settings));
 
-        QFuture<ServerController::ContainerDiagnostics> future =
+        QFuture<std::shared_ptr<ContainerDiagnostics>> future =
                 QtConcurrent::run([serverController, serverCredentials, container, port]() mutable {
                     return serverController->getContainerDiagnostics(serverCredentials, container, port);
                 });
 
-        auto *watcher = new QFutureWatcher<ServerController::ContainerDiagnostics>(this);
-        connect(watcher, &QFutureWatcher<ServerController::ContainerDiagnostics>::finished, this, [this, watcher]() {
-            auto diag = watcher->result();
-            emit containerDiagnosticsRefreshed(diag.portReachable, diag.upstreamReachable, diag.clientsConnected,
-                                               diag.lastConfigRefresh, diag.statsEndpoint);
+        auto *watcher = new QFutureWatcher<std::shared_ptr<ContainerDiagnostics>>(this);
+        connect(watcher, &QFutureWatcher<std::shared_ptr<ContainerDiagnostics>>::finished, this, [this, watcher]() {
+            auto base = watcher->result().get();
+            if (auto *diag = static_cast<MtProxyDiagnostics *>(base)) {
+                emit containerDiagnosticsRefreshed(diag->portReachable, diag->upstreamReachable,
+                                                   diag->clientsConnected, diag->lastConfigRefresh,
+                                                   diag->statsEndpoint);
+            }
             watcher->deleteLater();
         });
         watcher->setFuture(future);
