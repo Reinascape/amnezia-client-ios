@@ -338,9 +338,9 @@ PageType {
                             imageColor: AmneziaStyle.color.paleGray
                             visible: secret !== ""
                             onClicked: {
-                                qrOverlay.qrSource = MtProxyConfigModel.generateQrCode(tmeLink())
-                                qrOverlay.linkUrl = tmeLink()
-                                qrOverlay.visible = true
+                                qrDrawer.qrSource = MtProxyConfigModel.generateQrCode(tmeLink())
+                                qrDrawer.linkUrl = tmeLink()
+                                qrDrawer.openTriggered()
                             }
                         }
 
@@ -396,9 +396,9 @@ PageType {
                             image: "qrc:/images/controls/qr-code.svg"
                             imageColor: AmneziaStyle.color.paleGray
                             onClicked: {
-                                qrOverlay.qrSource = MtProxyConfigModel.generateQrCode(tgLink())
-                                qrOverlay.linkUrl = tgLink()
-                                qrOverlay.visible = true
+                                qrDrawer.qrSource = MtProxyConfigModel.generateQrCode(tgLink())
+                                qrDrawer.linkUrl = tgLink()
+                                qrDrawer.openTriggered()
                             }
                         }
 
@@ -540,40 +540,6 @@ PageType {
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.leftMargin: 12
-                            Layout.rightMargin: 12
-                            Layout.topMargin: 8
-                            Layout.bottomMargin: 4
-                            spacing: 4
-
-                            HorizontalRadioButton {
-                                Layout.fillWidth: true
-                                text: qsTr("Standard")
-                                ButtonGroup.group: secretTabGroup
-                                checked: root.syncedSecretTabIndex === 0
-                                onClicked: root.syncedSecretTabIndex = 0
-                                visible: root.savedTransportMode !== "faketls"
-                            }
-                            HorizontalRadioButton {
-                                Layout.fillWidth: true
-                                text: qsTr("Padded")
-                                ButtonGroup.group: secretTabGroup
-                                checked: root.syncedSecretTabIndex === 1
-                                onClicked: root.syncedSecretTabIndex = 1
-                                visible: root.savedTransportMode !== "faketls"
-                            }
-                            HorizontalRadioButton {
-                                Layout.fillWidth: true
-                                text: qsTr("FakeTLS")
-                                ButtonGroup.group: secretTabGroup
-                                checked: root.syncedSecretTabIndex === 2
-                                onClicked: root.syncedSecretTabIndex = 2
-                                visible: root.savedTransportMode === "faketls"
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.leftMargin: 12
                             Layout.rightMargin: 8
                             Layout.topMargin: 4
                             Layout.bottomMargin: 8
@@ -653,7 +619,6 @@ PageType {
                     Layout.rightMargin: 16
                     Layout.bottomMargin: 16
                     text: qsTr("Enable MTProxy")
-                    descriptionText: root.statusText()
                     checked: isEnabled
                     enabled: !isCheckingStatus && containerStatus !== 0 && containerStatus !== 3 && !isUpdating
                     onToggled: function () {
@@ -1367,129 +1332,6 @@ PageType {
                         isUpdating = true
                         InstallController.updateContainer(MtProxyConfigModel.getConfig(), false)
                     }
-                }
-            }
-        }
-    }
-
-    Rectangle {
-        id: qrOverlay
-        anchors.fill: parent
-        color: AmneziaStyle.color.midnightBlack
-        visible: false
-        z: 200
-
-        property string qrSource: ""
-        property string linkUrl: ""
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: qrOverlay.visible = false
-        }
-
-        ImageButtonType {
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.topMargin: 20 + SettingsController.safeAreaTopMargin
-            anchors.rightMargin: 16
-            implicitWidth: 40
-            implicitHeight: 40
-            hoverEnabled: true
-            image: "qrc:/images/controls/close.svg"
-            imageColor: AmneziaStyle.color.paleGray
-            z: 201
-            onClicked: qrOverlay.visible = false
-        }
-
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.topMargin: 60 + SettingsController.safeAreaTopMargin
-            implicitHeight: qrPanelContent.implicitHeight
-            color: AmneziaStyle.color.onyxBlack
-            radius: 16
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: 16
-                color: AmneziaStyle.color.onyxBlack
-            }
-
-            MouseArea {
-                anchors.fill: parent
-            }
-
-            ColumnLayout {
-                id: qrPanelContent
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                spacing: 0
-
-                Header2Type {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 24
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    headerText: qsTr("Telegram connection link")
-                }
-
-                BasicButtonType {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 24
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    text: qsTr("Share")
-                    leftImageSource: "qrc:/images/controls/share-2.svg"
-                    clickedFunc: function () {
-                        Qt.openUrlExternally(qrOverlay.linkUrl)
-                    }
-                }
-
-                BasicButtonType {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 12
-                    Layout.leftMargin: 16
-                    Layout.rightMargin: 16
-                    text: qsTr("Copy")
-                    leftImageSource: "qrc:/images/controls/copy.svg"
-                    clickedFunc: function () {
-                        GC.copyToClipBoard(qrOverlay.linkUrl)
-                        PageController.showNotificationMessage(qsTr("Copied"))
-                        qrOverlay.visible = false
-                    }
-                }
-
-                Rectangle {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 24
-                    width: 220
-                    height: 220
-                    color: "white"
-                    radius: 8
-
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        smooth: false
-                        fillMode: Image.PreserveAspectFit
-                        source: qrOverlay.qrSource
-                    }
-                }
-
-                CaptionTextType {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 16
-                    Layout.leftMargin: 32
-                    Layout.rightMargin: 32
-                    Layout.bottomMargin: 32 + SettingsController.safeAreaBottomMargin
-                    text: qsTr("Scan with your camera to add proxy to Telegram")
-                    color: AmneziaStyle.color.mutedGray
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
                 }
             }
         }
