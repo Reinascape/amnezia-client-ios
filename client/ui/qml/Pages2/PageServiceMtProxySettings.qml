@@ -958,7 +958,7 @@ PageType {
                     Layout.bottomMargin: 16
                     visible: transportMode === "faketls"
                     headerText: qsTr("FakeTLS domain")
-                    textField.placeholderText: "google.com"
+                    textField.placeholderText: "www.googletagmanager.com"
                     textField.text: tlsDomain
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
