@@ -121,7 +121,7 @@ QVariant MtProxyConfigModel::data(const QModelIndex &index, int role) const
                 .toString(protocols::mtProxy::transportModeStandard);
     }
     case Roles::TlsDomainRole: {
-        return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString();
+        return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString(protocols::mtProxy::defaultTlsDomain);
     }
     case Roles::AdditionalSecretsRole: {
         QJsonArray arr = m_protocolConfig.value(protocols::mtProxy::additionalSecretsKey).toArray();
@@ -258,7 +258,7 @@ QString MtProxyConfigModel::getTransportMode() const
 
 QString MtProxyConfigModel::getTlsDomain() const
 {
-    return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString();
+    return m_protocolConfig.value(protocols::mtProxy::tlsDomainKey).toString(protocols::mtProxy::defaultTlsDomain);
 }
 
 QString MtProxyConfigModel::getPublicHost() const
@@ -334,6 +334,46 @@ QString MtProxyConfigModel::generateQrCode(const QString &text)
     }
     auto qr = qrCodeUtils::generateQrCode(text.toUtf8());
     return qrCodeUtils::svgToBase64(QString::fromStdString(toSvgString(qr, 1)));
+}
+
+QString MtProxyConfigModel::defaultTlsDomain() const
+{
+    return protocols::mtProxy::defaultTlsDomain;
+}
+
+QString MtProxyConfigModel::defaultPort() const
+{
+    return protocols::mtProxy::defaultPort;
+}
+
+QString MtProxyConfigModel::defaultWorkers() const
+{
+    return protocols::mtProxy::defaultWorkers;
+}
+
+int MtProxyConfigModel::maxWorkers() const
+{
+    return protocols::mtProxy::maxWorkers;
+}
+
+QString MtProxyConfigModel::transportModeStandard() const
+{
+    return protocols::mtProxy::transportModeStandard;
+}
+
+QString MtProxyConfigModel::transportModeFakeTLS() const
+{
+    return protocols::mtProxy::transportModeFakeTLS;
+}
+
+QString MtProxyConfigModel::workersModeAuto() const
+{
+    return protocols::mtProxy::workersModeAuto;
+}
+
+QString MtProxyConfigModel::workersModeManual() const
+{
+    return protocols::mtProxy::workersModeManual;
 }
 
 QHash<int, QByteArray> MtProxyConfigModel::roleNames() const

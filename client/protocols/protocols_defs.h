@@ -277,6 +277,8 @@ namespace amnezia
 
             constexpr char defaultPort[]           = "443";
             constexpr char defaultWorkers[]        = "2";
+            constexpr int  maxWorkers              = 32;
+            constexpr char defaultTlsDomain[]      = "googletagmanager.com";
         }
 
     } // namespace protocols

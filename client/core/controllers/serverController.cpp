@@ -843,7 +843,11 @@ ServerController::Vars ServerController::genVarsForScript(const ServerCredential
     vars.append({ { "$MTPROXY_SECRET",         mtProxyConfig.value(protocols::mtProxy::secretKey).toString("") } });
     vars.append({ { "$MTPROXY_TAG",            mtProxyConfig.value(protocols::mtProxy::tagKey).toString("") } });
     vars.append({ { "$MTPROXY_TRANSPORT_MODE", mtProxyConfig.value(protocols::mtProxy::transportModeKey).toString(protocols::mtProxy::transportModeStandard) } });
-    vars.append({ { "$MTPROXY_TLS_DOMAIN",     mtProxyConfig.value(protocols::mtProxy::tlsDomainKey).toString("") } });
+    QString tlsDomain = mtProxyConfig.value(protocols::mtProxy::tlsDomainKey).toString();
+    if (tlsDomain.isEmpty()) {
+        tlsDomain = protocols::mtProxy::defaultTlsDomain;
+    }
+    vars.append({ { "$MTPROXY_TLS_DOMAIN", tlsDomain } });
     vars.append({ { "$MTPROXY_PUBLIC_HOST",    mtProxyConfig.value(protocols::mtProxy::publicHostKey).toString("") } });
 
     // Additional secrets: comma-separated list

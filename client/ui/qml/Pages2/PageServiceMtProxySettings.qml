@@ -28,11 +28,10 @@ PageType {
     property string previousPort: ""
     property string previousTag: ""
     property string previousPublicHost: ""
-    property string previousTransportMode: "standard"
-    property string previousTlsDomain: ""
-    property string previousWorkersMode: "auto"
-    property string previousWorkers: "2"
-    readonly property int maxWorkers: 32
+    property string previousTransportMode: MtProxyConfigModel.transportModeStandard()
+    property string previousTlsDomain: MtProxyConfigModel.defaultTlsDomain()
+    property string previousWorkersMode: MtProxyConfigModel.workersModeAuto()
+    property string previousWorkers: MtProxyConfigModel.defaultWorkers()
     property bool   previousNatEnabled: false
     property string previousNatInternalIp: ""
     property string previousNatExternalIp: ""
@@ -275,7 +274,8 @@ PageType {
 
                 function secretForMode(mode) {
                     if (mode === "faketls") {
-                        return root.savedTlsDomain !== "" ? "ee" + secret + domainToHex(root.savedTlsDomain) : "ee" + secret
+                        var domain = root.savedTlsDomain !== "" ? root.savedTlsDomain : MtProxyConfigModel.defaultTlsDomain()
+                        return "ee" + secret + domainToHex(domain)
                     } else if (mode === "padded") {
                         return "dd" + secret
                     }
@@ -945,7 +945,7 @@ PageType {
                     Layout.bottomMargin: 16
                     visible: transportMode === "faketls"
                     headerText: qsTr("FakeTLS domain")
-                    textField.placeholderText: "googletagmanager.com"
+                    textField.placeholderText: root.previousTlsDomain
                     textField.text: tlsDomain
                     textField.onEditingFinished: {
                         textField.text = textField.text.replace(/^\s+|\s+$/g, '')
@@ -1141,7 +1141,7 @@ PageType {
                         textField.maximumLength: 3
                         textField.validator: IntValidator {
                             bottom: 1
-                            top: root.maxWorkers
+                            top: MtProxyConfigModel.maxWorkers()
                         }
                         textField.onEditingFinished: {
                             textField.text = textField.text.replace(/^\s+|\s+$/g, '')

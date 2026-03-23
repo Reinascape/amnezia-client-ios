@@ -64,6 +64,15 @@ public slots:
     Q_INVOKABLE QString generateQrCode(const QString &text);
     Q_INVOKABLE void setEnabled(bool enabled);
 
+    Q_INVOKABLE QString defaultTlsDomain() const;
+    Q_INVOKABLE QString defaultPort() const;
+    Q_INVOKABLE QString defaultWorkers() const;
+    Q_INVOKABLE int maxWorkers() const;
+    Q_INVOKABLE QString transportModeStandard() const;
+    Q_INVOKABLE QString transportModeFakeTLS() const;
+    Q_INVOKABLE QString workersModeAuto() const;
+    Q_INVOKABLE QString workersModeManual() const;
+
 protected:
     QHash<int, QByteArray> roleNames() const override;
 
