@@ -1,4 +1,4 @@
-FROM ghcr.io/amnezia-vpn/amnezia-mtproxy:latest
+FROM amneziavpn/mtproxy:latest
 
 RUN mkdir -p /opt/amnezia /data
 RUN printf '#!/bin/sh\ntail -f /dev/null\n' > /opt/amnezia/start.sh && \
