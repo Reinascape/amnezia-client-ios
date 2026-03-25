@@ -69,5 +69,3 @@ exec mtproto-proxy \
     ${TAG_ARG} \
     ${DOMAIN_ARG} \
     /data/proxy-multi.conf
-
-

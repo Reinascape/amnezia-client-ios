@@ -58,4 +58,3 @@ echo "[*] Secret:    ${SECRET}"
 echo "[*] FakeTLS:   ${FAKETLS_SECRET}"
 echo "[*] tg:// link:   tg://proxy?server=${LINK_HOST}&port=${PORT}&secret=${LINK_SECRET}"
 echo "[*] t.me link:    https://t.me/proxy?server=${LINK_HOST}&port=${PORT}&secret=${LINK_SECRET}"
-
