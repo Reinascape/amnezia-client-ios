@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Build script started ..."
+echo "Build script started..."
 
 set -o errexit -o nounset
 
@@ -14,9 +14,6 @@ echo "Build dir: ${BUILD_DIR}"
 
 APP_NAME=AmneziaVPN
 APP_FILENAME=$APP_NAME.app
-APP_DOMAIN=org.amneziavpn.package
-PLIST_NAME=$APP_NAME.plist
-
 
 # Search Qt
 if [ -z "${QT_VERSION+x}" ]; then
@@ -32,68 +29,48 @@ cmake --version
 clang -v
 
 # Generate XCodeProj
-$QT_BIN_DIR/qt-cmake . -B $BUILD_DIR -GXcode -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR -DDEPLOY=ON
+echo "Generating Xcode project..."
+$QT_BIN_DIR/qt-cmake . -B $BUILD_DIR -GXcode \
+  -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR \
+  -DDEPLOY=ON
 
-KEYCHAIN=amnezia.build.ios.keychain
-KEYCHAIN_FILE=$HOME/Library/Keychains/${KEYCHAIN}-db
+echo "Building unsigned IPA..."
 
-# Setup keychain
-if [ "${IOS_SIGNING_CERT_BASE64+x}" ]; then
-  echo "Import certificate"
-
-  TRUST_CERT_CER=$BUILD_DIR/trust-cert.cer
-  SIGNING_CERT_P12=$BUILD_DIR/signing-cert.p12
-
-  echo $IOS_TRUST_CERT_BASE64 | base64 --decode > $TRUST_CERT_CER
-  echo $IOS_SIGNING_CERT_BASE64 | base64 --decode > $SIGNING_CERT_P12
-
-  shasum -a 256 $TRUST_CERT_CER
-  shasum -a 256 $SIGNING_CERT_P12
-
-  KEYCHAIN_PASS=$IOS_SIGNING_CERT_PASSWORD
-
-  security create-keychain -p $KEYCHAIN_PASS $KEYCHAIN || true
-  security default-keychain -s $KEYCHAIN
-  security unlock-keychain -p $KEYCHAIN_PASS $KEYCHAIN
-
-  security default-keychain
-  security list-keychains
-
-  security import $TRUST_CERT_CER -k $KEYCHAIN -P "" -T /usr/bin/codesign
-  security import $SIGNING_CERT_P12 -k $KEYCHAIN -P $IOS_SIGNING_CERT_PASSWORD -T /usr/bin/codesign
-
-  security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k $KEYCHAIN_PASS $KEYCHAIN
-  security find-identity -p codesigning
-  security set-keychain-settings $KEYCHAIN_FILE
-  security set-keychain-settings -t 3600 $KEYCHAIN_FILE
-  security unlock-keychain -p $KEYCHAIN_PASS $KEYCHAIN_FILE
-
-  # Copy provisioning prifiles
-  mkdir -p  "$HOME/Library/MobileDevice/Provisioning Profiles/"
-
-  echo $IOS_APP_PROVISIONING_PROFILE | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
-  echo $IOS_NE_PROVISIONING_PROFILE | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ne.mobileprovision
-
-  shasum -a 256 ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
-  shasum -a 256 ~/Library/MobileDevice/Provisioning\ Profiles/ne.mobileprovision
-
-  profile_uuid=`grep UUID -A1 -a ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision | grep -io "[-A-F0-9]\{36\}"`
-  profile_ne_uuid=`grep UUID -A1 -a ~/Library/MobileDevice/Provisioning\ Profiles/ne.mobileprovision | grep -io "[-A-F0-9]\{36\}"`
-
-  mv ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$profile_uuid.mobileprovision
-  mv ~/Library/MobileDevice/Provisioning\ Profiles/ne.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$profile_ne_uuid.mobileprovision
-else
-  echo "Failed to import certificate, aborting..."
-  exit 1
-fi
-
-# Build project
 xcodebuild \
-"OTHER_CODE_SIGN_FLAGS=--keychain '$KEYCHAIN_FILE'" \
--configuration Release \
--scheme AmneziaVPN \
--destination "generic/platform=iOS,name=Any iOS'" \
--project $BUILD_DIR/AmneziaVPN.xcodeproj
+  -project $BUILD_DIR/AmneziaVPN.xcodeproj \
+  -scheme AmneziaVPN \
+  -configuration Release \
+  -destination "generic/platform=iOS" \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="" \
+  PROVISIONING_PROFILE_SPECIFIER="" \
+  OTHER_CODE_SIGN_FLAGS="" \
+  build
 
-# restore keychain
-security default-keychain -s login.keychain
+echo "Archive created successfully (unsigned)"
+
+# Optional: create unsigned .ipa
+echo "Exporting unsigned IPA..."
+
+xcodebuild \
+  -exportArchive \
+  -archivePath $BUILD_DIR/Release-iphoneos/AmneziaVPN.xcarchive \
+  -exportPath $PROJECT_DIR \
+  -exportOptionsPlist <(cat <<EOF
+{
+  "method": "ad-hoc",
+  "signingStyle": "manual",
+  "signingCertificate": "",
+  "teamID": "",
+  "provisioningProfiles": {},
+  "iCloudContainerEnvironment": "Production"
+}
+EOF
+) \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGN_IDENTITY=""
+
+echo "Unsigned IPA build successfully: $PROJECT_DIR/AmneziaVPN-iOS.ipa"
