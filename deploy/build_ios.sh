@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Build script started..."
+echo "Build script started ..."
 
 set -o errexit -o nounset
 
@@ -14,6 +14,8 @@ echo "Build dir: ${BUILD_DIR}"
 
 APP_NAME=AmneziaVPN
 APP_FILENAME=$APP_NAME.app
+APP_DOMAIN=org.amneziavpn.package
+
 
 # Search Qt
 if [ -z "${QT_VERSION+x}" ]; then
@@ -29,48 +31,14 @@ cmake --version
 clang -v
 
 # Generate XCodeProj
-echo "Generating Xcode project..."
-$QT_BIN_DIR/qt-cmake . -B $BUILD_DIR -GXcode \
-  -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR \
-  -DDEPLOY=ON
+$QT_BIN_DIR/qt-cmake . -B $BUILD_DIR -GXcode -DQT_HOST_PATH=$QT_MACOS_ROOT_DIR -DDEPLOY=ON
 
-echo "Building unsigned IPA..."
-
+# Build project
 xcodebuild \
-  -project $BUILD_DIR/AmneziaVPN.xcodeproj \
-  -scheme AmneziaVPN \
-  -configuration Release \
-  -destination "generic/platform=iOS" \
-  CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGN_IDENTITY="" \
-  DEVELOPMENT_TEAM="" \
-  PROVISIONING_PROFILE_SPECIFIER="" \
-  OTHER_CODE_SIGN_FLAGS="" \
-  build
+-configuration Release \
+-scheme AmneziaVPN \
+-destination "generic/platform=iOS,name=Any iOS'" \
+-project $BUILD_DIR/AmneziaVPN.xcodeproj
 
-echo "Archive created successfully (unsigned)"
-
-# Optional: create unsigned .ipa
-echo "Exporting unsigned IPA..."
-
-xcodebuild \
-  -exportArchive \
-  -archivePath $BUILD_DIR/Release-iphoneos/AmneziaVPN.xcarchive \
-  -exportPath $PROJECT_DIR \
-  -exportOptionsPlist <(cat <<EOF
-{
-  "method": "ad-hoc",
-  "signingStyle": "manual",
-  "signingCertificate": "",
-  "teamID": "",
-  "provisioningProfiles": {},
-  "iCloudContainerEnvironment": "Production"
-}
-EOF
-) \
-  CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGN_IDENTITY=""
-
-echo "Unsigned IPA build successfully: $PROJECT_DIR/AmneziaVPN-iOS.ipa"
+# restore keychain
+security default-keychain -s login.keychain
