@@ -179,19 +179,39 @@ QVariant ServersModel::data(const QModelIndex &index, int role) const
     case AdEndpointRole: {
         return apiConfig.value(apiDefs::key::serviceInfo).toObject().value(apiDefs::key::adEndpoint).toString();
     }
+    case IsRenewalAvailableRole: {
+        return apiConfig.value(apiDefs::key::serviceInfo).toObject().value(apiDefs::key::isRenewalAvailable).toBool(false);
+    }
     case IsSubscriptionExpiredRole: {
-        if (configVersion != apiDefs::ConfigSource::AmneziaGateway) return false;
-        QString endDate = apiConfig.value(apiDefs::key::subscriptionEndDate).toString();
-        if (endDate.isEmpty()) return false;
+        if (configVersion != apiDefs::ConfigSource::AmneziaGateway) {
+            return false;
+        }
+        if (apiConfig.value(apiDefs::key::isInAppPurchase).toBool(false)) {
+            return false;
+        }
+        if (apiConfig.value(apiDefs::key::subscriptionExpiredByServer).toBool(false)) {
+            return true;
+        }
+        const QString endDate =
+                apiConfig.value(apiDefs::key::subscription).toObject().value(apiDefs::key::endDate).toString();
+        if (endDate.isEmpty()) {
+            return false;
+        }
         return apiUtils::isSubscriptionExpired(endDate);
     }
     case IsSubscriptionExpiringSoonRole: {
-        if (configVersion != apiDefs::ConfigSource::AmneziaGateway) return false;
-        QString endDate = apiConfig.value(apiDefs::key::subscriptionEndDate).toString();
-        if (endDate.isEmpty()) return false;
-        if (apiUtils::isSubscriptionExpired(endDate)) return false;
-        QDateTime endDateTime = QDateTime::fromString(endDate, Qt::ISODateWithMs);
-        return endDateTime <= QDateTime::currentDateTimeUtc().addDays(10);
+        if (configVersion != apiDefs::ConfigSource::AmneziaGateway) {
+            return false;
+        }
+        if (apiConfig.value(apiDefs::key::isInAppPurchase).toBool(false)) {
+            return false;
+        }
+        const QString endDate =
+                apiConfig.value(apiDefs::key::subscription).toObject().value(apiDefs::key::endDate).toString();
+        if (endDate.isEmpty()) {
+            return false;
+        }
+        return apiUtils::isSubscriptionExpiringSoon(endDate);
     }
     }
 
@@ -456,6 +476,7 @@ QHash<int, QByteArray> ServersModel::roleNames() const
     roles[AdHeaderRole] = "adHeader";
     roles[AdDescriptionRole] = "adDescription";
     roles[AdEndpointRole] = "adEndpoint";
+    roles[IsRenewalAvailableRole] = "isRenewalAvailable";
 
     roles[IsSubscriptionExpiredRole] = "isSubscriptionExpired";
     roles[IsSubscriptionExpiringSoonRole] = "isSubscriptionExpiringSoon";
@@ -744,21 +765,21 @@ bool ServersModel::isServerFromApiAlreadyExists(const QString &userCountryCode, 
     return false;
 }
 
-bool ServersModel::hasServerWithVpnKey(const QString &vpnKey) const
+int ServersModel::indexOfServerWithVpnKey(const QString &vpnKey) const
 {
     const QString normalizedInput = normalizeVpnKey(vpnKey);
     if (normalizedInput.isEmpty()) {
-        return false;
+        return -1;
     }
 
-    for (const auto &server : std::as_const(m_servers)) {
-        const auto apiConfig = server.toObject().value(configKey::apiConfig).toObject();
+    for (int i = 0; i < m_servers.size(); ++i) {
+        const auto apiConfig = m_servers.at(i).toObject().value(configKey::apiConfig).toObject();
         const QString existingKey = normalizeVpnKey(apiConfig.value(apiDefs::key::vpnKey).toString());
         if (!existingKey.isEmpty() && existingKey == normalizedInput) {
-            return true;
+            return i;
         }
     }
-    return false;
+    return -1;
 }
 
 bool ServersModel::serverHasInstalledContainers(const int serverIndex) const

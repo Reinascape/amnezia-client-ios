@@ -18,10 +18,12 @@ public:
         ServiceDescriptionRole,
         EndDateRole,
         IsComponentVisibleRole,
+        IsSubscriptionRenewalAvailableRole,
         HasExpiredWorkerRole,
         IsProtocolSelectionSupportedRole,
         IsSubscriptionExpiredRole,
-        IsSubscriptionExpiringSoonRole
+        IsSubscriptionExpiringSoonRole,
+        IsInAppPurchaseRole
     };
 
     explicit ApiAccountInfoModel(QObject *parent = nullptr);
@@ -57,6 +59,9 @@ private:
         QStringList supportedProtocols;
 
         QString subscriptionDescription;
+
+        bool isInAppPurchase = false;
+        bool isRenewalAvailable = false;
     };
 
     AccountInfoData m_accountInfoData;
